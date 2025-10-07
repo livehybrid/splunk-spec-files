@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 # This file contains possible settings and values for configuring
 # authentication via authentication.conf.
@@ -51,8 +51,9 @@ passwordHashAlgorithm = [SHA512-crypt|SHA256-crypt|SHA512-crypt-<num_rounds>|SHA
   $SPLUNK_HOME/etc/passwd file for the default "Splunk" authType.
 * "MD5-crypt" is an algorithm originally developed for FreeBSD in the early
   1990s, which became a widely used standard among UNIX machines. Splunk
-  Enterprise also used it through the 5.0.x releases. MD5-crypt runs the
-  salted password through a sequence of 1000 MD5 operations.
+  Enterprise also used it through the 5.0.x releases. "MD5-crypt" runs the
+  salted password through a sequence of 1000 MD5 operations. "MD5-crypt"
+  cannot be used to hash passwords in FIPS mode.
 * "SHA256-crypt" and "SHA512-crypt" are newer versions that use 5000 rounds
   of the Secure Hash Algorithm-256 (SHA256) or SHA512 hash functions.
   This is slower than MD5-crypt and therefore more resistant to dictionary
@@ -88,6 +89,13 @@ externalTwoFactorAuthSettings = <externalTwoFactorAuthSettings-key>
   authentication vendor.
 * This setting is optional.
 * No default.
+
+scimSupportedDomains = <comma-separated list>
+* A list of allowed network domains for the integration of SCIM 
+  (System for Cross-domain Identity Management).
+* This setting only has an effect if support for SCIM is turned on.
+* Do not modify this setting.
+* Default: *.okta.com, *.oktapreview.com, *.okta-emea.com
 
 
 #####################
@@ -1112,11 +1120,14 @@ signatureAlgorithm = RSA-SHA1 | RSA-SHA256 | RSA-SHA384 | RSA-SHA512
 * This setting is only used when 'signAuthnRequest' is set to "true".
 * This setting is applicable for both HTTP POST and HTTP Redirect binding.
 * RSA-SHA1 corresponds to 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'.
-* RSA-SHA256, RSA-SHA384, and RSA-SHA512 correspond to 'http://www.w3.org/2001/04/xmldsig-more'.
+* RSA-SHA256 corresponds to 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'.
+* RSA-SHA384 corresponds to 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384'.
+* RSA-SHA512 corresponds to 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'.
+* The "RSA-SHA1" algorithm has been DEPRECATED.
+* For a higher level of security, use "RSA-SHA384" or "RSA-SHA512".
 * This algorithm is sent as a part of 'sigAlg'.
-* For improved security, set to "RSA-SHA256", "RSA-SHA384", or "RSA-SHA512".
 * This setting is optional.
-* Default: RSA-SHA1
+* Default: RSA-SHA256
 
 inboundSignatureAlgorithm = RSA-SHA1;RSA-SHA256;RSA-SHA384;RSA-SHA512
 * A semicolon-separated list of signature algorithms for the SAML responses
@@ -1124,9 +1135,10 @@ inboundSignatureAlgorithm = RSA-SHA1;RSA-SHA256;RSA-SHA384;RSA-SHA512
 * The Splunk platform rejects any SAML responses that are not signed by
   any one of the specified algorithms.
 * This setting is applicable for both HTTP POST and HTTP Redirect binding.
-* For improved security, set to "RSA-SHA256", "RSA-SHA384", or "RSA-SHA512".
+* The "RSA-SHA1" algorithm has been DEPRECATED.
+* For a higher level of security, use "RSA-SHA384" or "RSA-SHA512".
 * This setting is optional.
-* Default: RSA-SHA1;RSA-SHA256;RSA-SHA384;RSA-SHA512
+* Default: RSA-SHA256;RSA-SHA384;RSA-SHA512
 
 inboundDigestMethod = SHA1;SHA256;SHA384;SHA512
 * A semicolon-separated list of digest methods for the SAML responses
@@ -1721,3 +1733,182 @@ enableMfaAuthRest = <boolean>
 * Default: false
 
 
+
+############################################################################
+# OAuth2 Token Validation Configuration
+############################################################################
+[oauth2_settings]
+
+issuer_uri = <string>
+* The fully-qualified domain name of the search head cluster load balancer.
+* No default.
+
+certFile = <string>
+* The path to the TLS certificate that the authentication system 
+  uses to sign OAuth2 tokens.
+* The certificate you specify must be in privacy-enhanced mail
+  (PEM) format.
+* Default: Not set
+
+sslPassword = <password>
+* The password for the certificate that the authentication system
+  uses to sign OAuth2 tokens.
+* If '[oauth2_settings]/certFile' has a value, then this setting
+  must also have a value.
+* Default: not set
+
+############################################################
+# External OAuth2 Configuration For Third Party Applications
+############################################################
+[oauth2_external_config_<oauth2_idp_issuer_url>]
+* Configuration settings for a specific OAuth2 Identity Provider (IdP).
+* Replace the '<oauth2_idp_issuer_url>' portion with the actual issuer URL 
+  from the identity provider, which serves as the unique identifier for this 
+  configuration.
+* The issuer URL always has a trailing slash (/).
+* Each OAuth2 configuration has its own separate role mappings and user
+  assignments.
+* The issuer URL used in the stanza name must exactly match the 'issuer'
+  setting value configured within this stanza.
+* Optionally configure multiple OAuth2 identity providers by creating multiple 
+  stanzas with different issuer URLs.
+
+audience = <string>
+* The expected token audience value that Splunk software validates against 
+  the 'aud' claim in the Identity Provider (IdP) JSON Web Token (JWT).
+* This value must exactly match the 'aud' claim in tokens issued by the
+  identity provider.
+* Required.
+* No default.
+
+clientIdClaim = <string>
+* The name of the JSON Web Token (JWT) claim field that contains the
+  client identifier.
+* Splunk software looks for this claim name in the Identity Provider
+  (IdP) JWT token and extracts the value to identify the OAuth client.
+* Required.
+* No default.
+
+disable = <boolean>
+* Whether this OAuth2 configuration is disabled.
+* A value of "true" means that this configuration is ignored and
+  tokens from this identity provider are rejected.
+* Required.
+* Default: false
+
+friendlyName = <string>
+* The name of the JSON Web Token (JWT) claim field that contains a
+  human-readable client name.
+* Splunk software extracts the value from this claim to display a
+  friendly name for the OAuth client in logs and administrative interfaces.
+* This setting is optional.
+* No default.
+
+groupsClaim = <string>
+* The name of the JSON Web Token (JWT) claim field that contains the
+  user's group memberships.
+* Splunk software extracts the group information from this claim to
+  determine the user's role assignments and permissions.
+* The claim value can be a single group name or an array of group names.
+* Required.
+* No default.
+
+issuer = <string>
+* The Identity Provider (IdP) issuer URL that issued the JSON Web Token (JWT).
+* This value must exactly match the 'iss' claim in tokens from this IdP.
+* The issuer URL always has a trailing slash (/).
+* Splunk software uses this to validate that tokens came from the expected
+  identity provider.
+* Required.
+* No default.
+
+jwks_uri = <string>
+* The public JSON Web Key Set (JWKS) endpoint URL for the Identity
+  Provider (IdP).
+* Splunk software retrieves the public keys from this endpoint to validate
+  the cryptographic signature of JSON Web Token (JWT) tokens issued by the IdP.
+* This must be a publicly accessible HTTPS URL that returns the IdP's
+  public signing keys in JWKS format.
+* Required.
+* No default.
+
+#############################################
+# External OAuth2 Configuration Role mappings
+#############################################
+[oauth2_external_role_mapping_<oauth2_idp_issuer_url>]
+* Role mapping configuration for a specific OAuth2 Identity Provider (IdP).
+* Maps IdP groups to roles within the Splunk platform for the OAuth2 
+  configuration identified by the '<oauth2_idp_issuer_url>'.
+* The '<oauth2_idp_issuer_url>' portion must exactly match the issuer URL
+  used in the corresponding '[oauth2_external_config_<oauth2_idp_issuer_url>]'
+  stanza.
+* The issuer URL always has a trailing slash (/).
+* Each OAuth2 IdP has its own separate role-mapping stanza.
+* Follow this stanza name with several IdP-group-to-Splunk-platform-role
+  mappings, as defined below.
+
+<idp_group> = <semicolon-separated list>
+* Maps an Identity Provider (IdP) group name to one or more roles within
+  your Splunk platform deployment.
+* The '<idp_group>' is the group name as it appears in the JSON Web Token
+  (JWT) from the identity provider. This value is extracted using the
+  'groupsClaim' setting.
+* The "<semicolon-separated list>" is a semicolon-separated list of roles
+  from the authorize.conf configuration file.
+* Do not include spaces around the semicolons in the roles list.
+* Optionally list several of these setting/value pairs to map multiple IdP 
+  groups to roles within your Splunk platform deployment.
+* Example: developers = power;user
+* No default.
+
+####################################
+# External OAuth2 Client Information
+####################################
+[oauth2_external_app_client_<oauth2_client_name>]
+* Configuration stanza for storing information about an OAuth client
+  associated with a specific OAuth2 Identity Provider (IdP) configuration.
+* The '<oauth2_client_name>' must exactly match the 'appClient' setting value.
+* This stanza links an OAuth client to its corresponding OAuth2 configuration
+  via the 'oAuth2Config' setting, which references an issuer URL from an
+  '[oauth2_external_config_<oauth2_idp_issuer_url>]' stanza.
+* Each OAuth client requires its own separate stanza.
+
+appClient = <string>
+* The name or identifier of the OAuth client application.
+* This value must exactly match the '<oauth2_client_name>' portion of the
+  stanza name.
+* Identifies and references this specific OAuth client configuration.
+* Required.
+* No default.
+
+createdAt = <positive integer>
+* Unix timestamp (seconds since epoch) that indicates when this OAuth
+  client configuration was created.
+* Required.
+* No default.
+
+modifiedAt = <positive integer>
+* Unix timestamp (seconds since epoch) that indicates when this OAuth
+  client configuration was last modified.
+* Required.
+* No default.
+
+oAuth2Config = <string>
+* The issuer URL that links this OAuth client to its corresponding OAuth2
+  Identity Provider (IdP) configuration.
+* This value must exactly match the '<oauth2_idp_issuer_url>' portion from
+  an '[oauth2_external_config_<oauth2_idp_issuer_url>]' stanza.
+* The issuer URL always has a trailing slash (/).
+* Establishes the relationship between this client and its OAuth2 IdP 
+  configuration.
+* Required.
+* No default.
+
+roles = <semicolon separated list>
+* A semicolon-separated list of roles within this Splunk platform deployment 
+  that are assigned to users who authenticate through this OAuth client.
+* Roles must exist in the authorize.conf configuration file.
+* Do not include spaces around the semicolons in the roles list.
+* Example: power;user
+* Required.
+* No default.

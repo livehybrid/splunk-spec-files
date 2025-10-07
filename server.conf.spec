@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 ############################################################################
 # OVERVIEW
@@ -601,6 +601,15 @@ cgroup_location = <string>
 * An empty string indicates the setting is off.
 * NOTE: Do not change this setting unless instructed to do so by Splunk Support.
 * Default: auto
+
+allowed_unarchive_commands = <comma-separated list>
+* A list of *nix shell commands that the 'unarchive_cmd' setting
+  in the props.conf configuration file can run. 
+* This setting is only applicable when 'unarchive_cmd_start_mode'
+  has a value of "direct".
+* NOTE: Leaving this setting with no value means that 'unarchive_cmd'
+  can run any shell command, which is a potential security risk.
+* Default: Empty string ('unarchive_cmd' can use any shell command.)
 
 ############################################################################
 # Configuration Change Tracker
@@ -3881,6 +3890,24 @@ notify_buckets_usage_batch_size = <positive integer>
 * CAUTION: Do not modify this setting without guidance from Splunk personnel.
 * Default: 2048
 
+clustered_bucket_database_granularity = global | index
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Only valid for 'mode=peer'.
+* Specifies the level at which Splunk software creates search
+  manifest files on search peers in an indexer cluster.
+* Search manifest files list primary buckets for the search peer.
+  This is not the same as .bucketManifest files, which list all buckets that
+  reside on the host per index.
+* A value of "global" means Splunk software creates a single search 
+  manifest file that spans all indexes on the search peer.
+* A value of "index" means Splunk software creates a search manifest file
+  per index.
+* This setting is dynamically reloadable and does not require a restart of the
+  Splunk instance.
+* NOTE: Do not change this setting unless instructed to do so by Splunk Support.
+* Default: global
+
 max_usage_rebalance_retries = <positive integer>
 * Only valid for 'mode=manager'.
 * The maximum number of retry attemtps before the cluster manager gives up
@@ -5539,7 +5566,7 @@ defaultCidrPrefixLength = <positive int>[0-32]|disabled
 
 ocspValidation = <boolean>
 * OCSP (Online Certificate Status Protocol) checks for certificate revocation.
-* A value of "true" means OSCP valication is turned on, which eliminates the 
+* A value of "true" means OSCP validation is turned on, which eliminates the 
   requirement to periodically download a Certificate Revocation List (CRL) and
   restart the KV store.
 * A value of "false" means OSCP validation is turned off. You must periodically
@@ -6691,6 +6718,51 @@ enable_supervisor_admin_api = <boolean>
 * A value of "false" means the admin API endpoints are disabled by the supervisor.
 * Default: true
 
+[spotlight]
+enable_otlp_traces = <boolean>
+* Determines whether or not OpenTelemetry (OTel) trace 
+  collection is enabled for the Spotlight sidecar. 
+* A value of "false" means that OTel trace collection is disabled.
+* A value of "true" means that OTel trace collection is enabled.
+* Default: false
+
+enable_otlp_metrics = <boolean>
+* Determines whether or not OTel metrics collection
+  is enabled for the Spotlight sidecar.
+* A value of "false" means that OTel metrics collection is disabled.
+* A value of "true" means that OTel metrics collection is enabled.
+* Default: false
+
+traces_head_sampling_rate = <decimal>
+* Specifies the head sampling rate for trace data collected by the Spotlight sidecar. 
+  Must be between 0.0 and 1.0. 
+* A value of 1.0 means that all traces are sampled. 
+* A value of 0.0 means that no traces are sampled. 
+* Default: 0.01
+
+[spotlight:splunkd]
+enable_otlp_traces = <boolean>
+* Changes whether OpenTelemetry (OTel) trace collection is disabled or enabled in splunkd for the
+  Spotlight sidecar by overriding the enable_otlp_traces setting value in the [spotlight] stanza. 
+* A value of "false" means that OTel trace collection in splunkd is disabled.
+* A value of "true" means that OTel trace collection in splunkd is enabled.
+* Default: false
+
+enable_otlp_metrics = <boolean>
+* Changes whether OTel metrics collection is disabled or enabled in splunkd for the Spotlight sidecar 
+  by overriding the enable_otlp_metrics setting value in the [spotlight] stanza.
+* A value of "false" means that OTel metrics collection in splunkd is disabled.
+* A value of "true" means that OTel metrics collection in splunkd is enabled.
+* Default: false
+
+traces_head_sampling_rate = <decimal>
+* Changes the head sampling rate for trace data collected by the Spotlight sidecar in splunkd by 
+  overriding the value of traces_head_sampling_rate setting in the [spotlight] stanza.
+  Must be between 0.0 and 1.0. 
+* A value of 1.0 means that all traces from splunkd are sampled. 
+* A value of 0.0 means that no traces from splunkd are sampled. 
+* Default: 0.0
+
 [localProxy]
 allocated_max_threads_percentage = <integer>
 * Specifies the percentage of maxThreads that can be allocated to 
@@ -6752,6 +6824,22 @@ repoDir = <path>
 * NOTE: Before you modify this setting, consult the Splunk support team.
 * Default: $SPLUNK_HOME/var/vcs
 
+[version_control:compression]
+disabled = <boolean>
+* Whether or not the automated compression job for the Version Control repository is turned on.
+* The compression job reduces the on-disk footprint of the Version Control metadata by
+  periodically archiving and compressing stale objects.
+* A value of "true" means that compression is turned off.
+* A value of "false" means that compression is turned on.
+* Default: true
+
+interval = <interval><unit>
+* How often the Splunk platform runs the Version Control compression job.
+* Use the standard Splunk interval syntax for seconds, minutes, hours, days, etc.
+  For example: 60s, 1m, 1h, 1d, etc.
+* Must be greater than 0s (0 seconds).
+* Default: 1d (1 day)
+
 ############################################################################
 # PostgreSQL configuration
 ############################################################################
@@ -6761,8 +6849,7 @@ disabled = <boolean>
 * Default: false
 
 enable_clustered_mode = <boolean>
-* This setting turns a clustered PostgreSQL deployment on or off for search head clusters (SHC).
-* Default: false
+REMOVED. This setting has been removed and has no effect. 
 
 ############################################################################
 # Inter-process Communication (IPC) Broker configuration
@@ -6793,6 +6880,27 @@ port = <integer>
     is 1024 and the highest is 65535.
 * No default.
 
+############################################################################
+# Cluster state server configuration
+############################################################################
+[cluster_state_server]
+disabled = <boolean>
+* Whether or not the cluster state server is turned off.
+* A value of "true" means the state server is turned off.
+* A value of "false" means the state server is turned on.
+* Default: false
+
+http_port = <integer>
+* The TCP/IP network port that the cluster state server helper
+  process uses to serve incoming requests.
+* This setting is optional.
+* The lowest valid value is 1025 and the highest is 65535.
+* Default: 8600
+
+helper_process_read_timeout_secs = <unsigned integer>
+* The maximum time, in seconds, that splunkd waits for the cluster state
+  server helper process to return results of query execution.
+* Default: 5 (five seconds)
 
 ############################################################################
 # Data Management configuration

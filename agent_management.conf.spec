@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 ############################################################################
 # OVERVIEW
@@ -24,8 +24,7 @@
 * Agent Management helper process settings. This stanza must exist.
 
 fallback_to_deployment_server_ui = <boolean>
-* Indicates which UI the forwarder_management should use. When set to "false", the forwarder_management uses the agent management UI, When set to "true", the forwarder_management uses the deployment server UI.
-* Default: false.
+* REMOVED.  This setting is no longer used.
 
 log_level = <string> 
 * How verbose the logs are.
@@ -36,7 +35,7 @@ request_timeout = <string>
 * A global request timeout setting that defines how long the Agent Manager processes a request before it times out.
 * Valid values are numbers followed by a time unit.
 * Valid time units are "ms", "s", "m", "h".
-* Default: 90s.
+* Default: 5m.
 
 [search_client]
 * Agent Management helper process settings for the SPL subsystem.
@@ -73,7 +72,7 @@ request_timeout = <string>
 * A time limit for HTTP requests made by the Agent Manager to splunkd.
 * Valid values are numbers followed by a time unit.
 * Valid time units are "ms", "s", "m", "h".
-* Default: 60s.
+* Default: 285s.
 
 connection_keep_alive = <string>
 * The maximum amount of time an idle connection made by the Agent Manager to splunkd remains idle before closing.

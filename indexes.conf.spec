@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 ############################################################################
 # OVERVIEW
@@ -219,6 +219,57 @@ assureUTF8 = <boolean>
 enableRealtimeSearch = <boolean>
 * Enables real-time searches.
 * Default: true
+
+perfTuneMetaDataAPIs = <boolean>
+* Whether or not the Splunk daemon auto-tunes metadata access to
+  improve indexing and index replication performance.
+* A value of "true" means that the Splunk daemon auto-tunes
+  metadata access to improve indexing and replication performance.
+* A value of "false" means that the Splunk daemon does not auto-tune
+  metadata access.
+* Default: false
+
+perfTuneMetaDataReads = <boolean>
+* Whether or not the Splunk daemon auto-tunes metadata read APIs.
+* A value of "true" means that the Splunk daemon auto-tunes
+  metadata read APIs.
+* A value of "false" means that the Splunk daemon does not auto-tune
+  metadata read APIs.
+* When 'perfTuneMetaDataAPIs' has a value of "false", this setting
+  has no effect.
+* This is an advanced setting. Do not change it unless
+  instructed to by Splunk Support.
+* Default: true
+
+perfTuneMetaDataWrites = <boolean>
+* Whether or not the Splunk daemon auto-tunes metadata write APIs.
+* A value of "true" means that the Splunk daemon auto-tunes
+  metadata write APIs.
+* A value of "false" means that the Splunk daemon does not auto-tune
+  metadata write APIs.
+* When 'perfTuneMetaDataAPIs' has a value of "false", this setting
+  has no effect.
+* This is an advanced setting. Do not change it unless
+  instructed to by Splunk Support.
+* Default: true
+
+quadReloadHashTable = <boolean>
+* Whether or not the Splunk daemon auto-tunes metadata internal table reloads.
+* A value of "true" means that the Splunk daemon auto-tunes
+  metadata internal table reloads.
+* A value of "false" means that the Splunk daemon does not auto-tune
+  metadata internal table reloads.
+* When 'perfTuneMetaDataAPIs' has a value of "false", this setting
+  has no effect.
+* This is an advanced setting. Do not change it unless
+  instructed to by Splunk Support.
+* Default: false
+
+hashTableSize = <integer>
+* The size, in bytes, of the metadata internal table.
+* This is an advanced setting. Do not change it unless
+  instructed to by Splunk Support.
+* Default: 1024
 
 suppressBannerList = <comma-separated list of strings>
 * suppresses index missing warning banner messages for specified indexes
@@ -903,6 +954,18 @@ maxMemMB = <nonnegative integer>
 * The default is recommended for all environments.
 * The highest legal value is 4294967295.
 * Default: 5
+
+tsidxSyncPeriod = <positive integer>
+* The amount of time, in seconds, after which splunkd forces a sync of tsidx
+  files.
+* Indexed events become searchable after the sync, which happens when the
+  indexing buffer is filled or when 'tsidxSyncPeriod' elapsed.
+* Use the higher value to reduce indexing overhead, especially on systems with
+  many indexes.
+* Use the lower value for faster searchability.
+* If the indexedRealtime mode is used, 'tsidxSyncPeriod' should be less than
+  'indexed_realtime_disk_sync_delay'.
+* Default: 1
 
 maxHotSpanSecs = <positive integer>
 * Upper bound of timespan of hot/warm buckets, in seconds.

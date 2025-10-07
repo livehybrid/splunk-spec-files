@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 ############################################################################
 # OVERVIEW
@@ -2011,6 +2011,15 @@ maxEventSize = <positive integer>[KB|MB|GB]
   greater than 'maxEventSize'.
 * Default: 5MB
 
+maxMemoryUsagePct = <positive integer>
+* The maximum percentage of memory that the Splunk platform instance
+  can use to process HTTP inputs.
+* When the host-wide memory usage surpasses this threshold, the
+  instance rejects HTTP inputs with an HTTP error 503 Service Unavailable
+  code.
+* The maximum legal value is 100.
+* Default: 100
+
 
 route = [has_key|absent_key:<key>:<queueName>;...]
 * See 'route' in the "[splunktcp]" stanza for
@@ -2842,6 +2851,22 @@ targetDc = <string>
 * Default: The DC that the local host used to connect to AD. The
   input binds to its root Distinguished Name (DN).
 
+adsUseSSL = <boolean>
+* Whether or not the Splunk platform instance uses TLS to
+  connect and bind to an Active Directory object for
+  authentication.
+* A value of "true" means that the instance uses the
+  ADS_USE_SSL flag when it attempts to bind to AD
+  objects.
+  * NOTE: For encrypted connections to work, you must have
+    the appropriate certificates in place. See the chapter
+    "Introduction to securing The Splunk Platform with TLS"
+    in the Securing Splunk Enterprise Manual in the Splunk
+    documentation for more information.
+* A value of "false" means that the instance does not attempt
+  to encrypt connections to bind to AD objects over TLS.
+* Default: false
+
 startingNode = <string>
 * Where in the Active Directory directory tree to start monitoring.
 * The user that you configure Splunk software to run as at
@@ -3358,11 +3383,12 @@ disabled = <boolean>
 * A value of "false" means the remote queue input is active. 
 * Default: false
 
-remote_queue.type = [sqs_smartbus|asq]
+remote_queue.type = [sqs_smartbus|asq|gcs_smartbus]
 * The remote queue type.
 * This type can be one of the following:
   * "sqs_smartbus" (Amazon Web Services (AWS) Simple Queue Service Smartbus)
   * "asq" (Azure Storage Queue (ASQ))
+  * "gcs_smartbus" (Google Publisher/Subscriber)
 * If you specify this setting, you must configure it with a valid
   value. If you do not, the remote queue that is associated with
   the 'remote.queue.<name>' stanza in which this setting is
@@ -3905,6 +3931,46 @@ remote_queue.asq.fail_threshold_for_dlq = <unsigned integer>
   is backed up in the dead letter queue smart store path.
 * Default: 5
 
+############################################################################
+# Google publisher/subscriber (Pub/Sub) smartbus specific settings
+############################################################################
+
+remote_queue.gcs_smartbus.project_id = <string>
+* The Google Cloud project ID where the Pub/Sub topic resides and
+  large message storage buckets are located.
+* This is required to authenticate and interact with the Pub/Sub API.
+* Default: not set
+
+remote_queue.gcs_smartbus.large_message_store.path = <string>
+* The path to the large message store.
+* Default: not set
+
+remote_queue.gcs_smartbus.max_hold_time_option = <number><unit>
+* The maximum time that the publisher holds a message before it flushes
+  the message as part of Pub/Sub operations.
+* If you do not provide a <unit> for this setting value, the Splunk
+  platform assumes that the value is in seconds.
+* Example: 1m (1 minute), 30s (30 seconds), 50ms (50 milliseconds), 10 (10 seconds)
+* Default: 10ms
+
+remote_queue.gcs_smartbus.max_deadline_time_option = <number><unit>
+* The maximum amount of time that the subscriber can take to acknowledge a message.
+* If the subscriber does not acknowledge the message before this time, the message
+  becomes eligible for redelivery.
+* If you do not provide a <unit> for this setting value, the Splunk
+  platform assumes that the value is in seconds.
+* Example: 1m (1 minute), 30s (30 seconds), 50ms (50 milliseconds), 10 (10 seconds)
+* Default: 600
+
+remote_queue.gcs_smartbus.max_outstanding_messages_option = <integer>
+* The maximum number of outstanding messages for the subscriber.
+* Default: 0 (unlimited)
+
+remote_queue.gcs_smartbus.max_concurrency_option = <integer>
+* The maximum number of gcs_smartbus Pub/Sub operations that can
+  occur at the same time.
+* Default: 4
+
 
 ############################################################################
 # Modular Inputs
@@ -3941,6 +4007,7 @@ run_introspection = <boolean>
   [myScheme]
   run_introspection = false
 * Default: true
+
 
 ###############################
 # LOGD (logd input for macOS)
@@ -4098,4 +4165,5 @@ journalctl-quiet = <boolean>
 
 journalctl-freetext = <string>
 * reserved for future use
+
 

@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 ############################################################################
 # OVERVIEW
 ############################################################################
@@ -45,7 +45,7 @@
 * If the 'filename' setting is not specified, an external program is searched for
   by appending extensions (e.g. ".py", ".pl") to the stanza name.
 * If the `chunked` setting is set to "true", in addition to the extensions ".py"
-  and ".pl" as above, the extensions ".exe", ".bat", ".cmd", ".sh", ".js", as
+  and ".pl" as above, the extensions ".exe", ".bat", ".cmd", ".sh", as
   well as no extension (to find binaries without extensions), are searched for.
 * See the 'filename' setting for more information about how external programs
   are searched for.

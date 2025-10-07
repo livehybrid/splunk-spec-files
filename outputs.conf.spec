@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 # Forwarders require outputs.conf. Splunk instances that do not forward
 # do not use it. Outputs.conf determines how the forwarder sends data to
@@ -1321,11 +1321,12 @@ remote_queue.* = <string>
 * This setting is optional.
 * No default.
 
-remote_queue.type = [sqs_smartbus|asq]
+remote_queue.type = [sqs_smartbus|asq|gcs_smartbus]
 * The remote queue type.
 * This type can be one of the following:
   * "sqs_smartbus" (Amazon Web Services (AWS) Simple Queue Service Smartbus)
   * "asq" (Azure Storage Queue (ASQ))
+  * "gcs_smartbus" (Google Publisher/Subscriber)
 * If you specify this setting, you must configure it with a valid
   value. If you do not, the remote queue that is associated with
   the 'remote.queue.<name>' stanza in which this setting is
@@ -1906,6 +1907,97 @@ remote_queue.asq.large_message_store.enable_shared_receipts = <boolean>
 * Default: false
 
 ####
+# Google publisher/subscriber (Pub/Sub) smartbus specific settings
+####
+
+remote_queue.gcs_smartbus.project_id = <string>
+* The Google Cloud project ID where the Pub/Sub topic resides and
+  large message storage buckets are located.
+* This is required to authenticate and interact with the Pub/Sub API.
+* Default: not set
+
+remote_queue.gcs_smartbus.large_message_store.path = <string>
+* The path to the large message store.
+* Default: not set
+
+remote_queue.gcs_smartbus.encoding_format = protobuf|s2s
+* The encoding format that Google Cloud Services uses to write data to the
+  remote queue.
+* Default: s2s
+
+remote_queue.gcs_smartbus.enable_inline_data = <boolean>
+* Whether or not to use gcs_smartbus directly to send events.
+* A value of "true" means that if the data packet is small enough
+  to fit into gcs_smartbus, Splunk Cloud Platform uses gcs_smartbus
+  to send event data, otherwise, it sends the packet to remote
+  storage, as well as sending its URI to the gcs_smartbus
+  remote queue.
+* A value of "false" means that Splunk Cloud Platform always sends the
+  data packet to remote storage, as well as sending the data packet
+  URI to the gcs_smartbus remote queue.
+* This setting only applies when 'remote_queue.gcs_smartbus.encoding_format'
+  has a value of "protobuf".
+* Default: false
+
+remote_queue.gcs_smartbus.send_interval = <number><unit>
+* The interval that the remote queue output processor waits for data to
+  arrive before sending a partial batch to the remote queue.
+* If you do not provide a <unit> for this setting value, the Splunk
+  platform assumes that the value is in seconds.
+* Examples: 100ms, 5s
+* This setting is optional.
+* Default: 4
+
+remote_queue.gcs_smartbus.retry_policy_option = <number><unit>
+* The maximum amount of time that Pub/Sub will attempt to publish a message.
+* This setting determines how long the publisher retries message delivery.
+* This is separate from the backoff, which configures how long the publisher waits
+  between attempts.
+* If you do not provide a <unit> for this setting value, the Splunk
+  platform assumes that the value is in seconds.
+* Example: 1m (1 minute), 30s (30 seconds), 50ms (50 milliseconds), 10 (10 seconds)
+* Default: 60
+
+remote_queue.gcs_smartbus.back_off_policy_option.initial = <number><unit>
+* The initial backoff duration for Pub/Sub operations.
+* When a Pub/Sub operation results in a failure, this setting determines
+  how long to initially wait before attempting the operation again.
+* If you do not provide a <unit> for this setting value, the Splunk
+  platform assumes that the value is in seconds.
+* Example: 1m (1 minute), 30s (30 seconds), 50ms (50 milliseconds), 10 (10 seconds)
+* Default: 100ms
+
+remote_queue.gcs_smartbus.back_off_policy_option.max = <number><unit>
+* The maximum backoff duration for Pub/Sub operations.
+* This is the longest amount of time that the publisher will back
+  off, after scaling up its backoff time in the face of
+  multiple Pub/Sub operation failures.
+* If you do not provide a <unit> for this setting value, the Splunk
+  platform assumes that the value is in seconds.
+* Example: 1m (1 minute), 30s (30 seconds), 50ms (50 milliseconds), 10 (10 seconds)
+* Default: 60
+
+remote_queue.gcs_smartbus.back_off_policy_option.scaling = <decimal>
+* The scaling to use for exponential backoff for Pub/Sub operations.
+* On each subsequent failure, the remote queue increases the backoff
+  time by this multiplier.
+* For example, 2.0 means the backoff is doubled after each failure.
+* Default: 1.3
+
+remote_queue.gcs_smartbus.max_hold_time_option = <number><unit>
+* The maximum time that the publisher holds a message before it flushes
+  the message as part of Pub/Sub operations.
+* If you do not provide a <unit> for this setting value, the Splunk
+  platform assumes the value is in seconds.
+* Example: 1m (1 minute), 30s (30 seconds), 50ms (50 milliseconds), 10 (10 seconds)
+* Default: 10ms
+
+remote_queue.gcs_smartbus.max_pending_messages_option = <integer>
+* The maximum number of pending messages for Pub/Sub operations. 
+* A value of "0" means to use server-side configurations.
+* Default: 0 (use server-side configurations)
+
+####
 # Remote File System (RFS) Output
 ####
 [rfs]
@@ -1972,6 +2064,8 @@ batchTimeout = <integer>
   the batch is at least this many seconds old, flush the batch.
 * This threshold may not be honored if the total memory usage for raw events exceeds
   limits.conf/[ingest_actions]/rfs.provider.rawdata_limit_mb for a storage provider.
+* For an S3 destination, the maximum allowed 'batchTimeout' value is 1800 seconds (30
+  minutes).
 * Default = 30
 
 compression = none|gzip|lz4|zstd
@@ -2343,6 +2437,8 @@ batchTimeout = <integer>
 * RfsOutputProcessor batches events before flushing to the destination.
 * If a batch has not hit any other criteria for being flushed, and
   the batch is at least this many seconds old, flush the batch.
+* For an S3 destination, the maximum allowed 'batchTimeout' value is 1800 seconds (30
+  minutes).
 * Default: Inherited batchTimeout setting from the global [rfs] stanza.
 
 compression = none|gzip|lz4|zstd

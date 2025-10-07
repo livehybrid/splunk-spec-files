@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 ############################################################################
 # OVERVIEW
@@ -125,9 +125,7 @@ disable_highcharts_accessibility = <boolean>
 [feature:dashboard_studio]
 
 activate_downsampling = <boolean>
-* This setting turns on or off the downsampling feature in Dashboard Studio.
-* A value of "true" activates the downsampling of data in time series charts and charts with a strictly increasing numeric x-axis in Dashboard Studio.
-* Default: true
+* DEPRECATED: This setting has no effect. It will be removed without notice in a future release.
 
 activate_dsl_webworkers_for_visualizations = <boolean>
 * Uses WebWorkers for Dynamic Options Syntax execution to isolate from overall dashboard loading and performance.
@@ -154,18 +152,6 @@ execute_chain_searches_with_tokens_in_search_process = <boolean>
 * A value of "true" means that Dashboard Studio runs chain searches that use tokens ahead of time in the search process.
 * A value of "false" means that Dashboard Studio runs chain searches that use tokens in the main splunkd process rather than ahead of time in the search process.
 * Default: false
-
-activate_dashboard_versioning = <boolean>
-* This setting turns on or off UI to save, view, and restore Dashboard Studio versions.
-* A value of "true" means that Dashboard Studio dashboards can be saved with a commit message, and previous versions can be viewed and restored from the UI.
-* The setting will be removed without notice in a future release.
-* Default: true
-
-activate_add_saved_searches_from_studio = <boolean>
-* This setting activates the UI that adds a new Saved Search datasource directly from Dashboard Studio.
-* A value of "true" means that the option to add a new Saved Search appears in the Dashboard Studio UI.
-* The setting will be removed without notice in a future release.
-* Default: true
 
 activate_o11y_dashboards = <boolean>
 * This setting turns on or off all observability functionality within Dashboard Studio.
@@ -210,13 +196,38 @@ activate_save_to_dashboard_tab = <boolean>
 * The setting will be removed without notice in a future release.
 * Default: true
 
-[feature:pdfgen]
-activate_chromium_legacy_export = <boolean>
-* Whether or not the Chromium web engine generates PDF exports for Simple XML dashboards, reports, and alerts.
-* A value of "true" means that Chromium generates PDF exports for these dashboards, reports, and alerts.
-* A value of "false" means that the Node.js runtime generates the PDF exports.
-* The value for this setting does not affect exports from Dashboard Studio.
+activate_custom_visualizations = <boolean>
+* This setting determines whether Dashboard Studio can display custom
+  visualizations.
+* A value of "true" means that Dashboard Studio can display custom 
+  visualizations.
+* A value of "false" turns off custom visualizations.
+* The setting will be removed without notice in a future release.
+* Do not modify this value.
 * Default: true
+
+activate_conditional_visibility = <boolean>
+* This settings determines whether users can access a modal to configure
+  advanced conditional visibility rules in Dashboard Studio.
+* A value of "true" means users can access the modal.
+* A value of "false" means users cannot access the modal.
+* The setting will be removed without notice in a future release.
+* Do not modify this value.
+* Default: true
+
+# This setting determines how Studio dashboards in grid layout are scaled.
+# A value of "true" means that Dashboard Studio uses CSS scaling to shrink or
+# grow the layout.
+# A value of "false" means the dashboard height stays consistent regardless of
+# the width of the window.
+# The setting will be removed without notice in a future release.
+# Do not modify this value.
+activate_grid_layout_css_scaling = true
+
+[feature:pdfgen]
+
+activate_chromium_legacy_export = <boolean>
+* REMOVED. This setting has been removed and has no effect.
 
 
 
@@ -235,10 +246,7 @@ enable_acuif_pages = <boolean>
 
 enable_triggered_alerts_vnext = <boolean>
 * Determines whether or not Splunk Web loads the new triggered alerts page.
-* DEPRECATED.
-* A value of "true" means that Splunk Web does load the new triggered alerts page.
-* CAUTION: Do not change this setting.
-* Default: true
+* REMOVED. This setting has been removed and has no effect.
 
 enable_home_vnext = <boolean>
 * Determines whether or not Splunk Web loads the new home page.
@@ -248,11 +256,7 @@ enable_home_vnext = <boolean>
 * Default: true
 
 enable_datasets_vnext = <boolean>
-* Determines whether or not Splunk Web loads the new datasets page.
-* DEPRECATED.
-* A value of "true" means that Splunk Web does load the new datasets page.
-* CAUTION: Do not change this setting.
-* Default: true
+* REMOVED. This setting has been removed and has no effect.
 
 enable_job_manager_vnext = <boolean>
 * Determines whether or not Splunk Web loads the new job manager page.
@@ -329,6 +333,15 @@ enable_authentication_users_vnext = <boolean>
   which uses separate pages for edits.
 * A value of "false" means that Splunk Web loads the previous "Users" page,
   which uses modals for edits.
+* Default: true
+
+enable_data_indexes_cloud_vnext = <boolean>
+* Whether or not Splunk Web loads the updated "Indexes" Cloud page, which uses
+  separate pages for edits.
+* A value of "true" means that Splunk Web loads the updated "Indexes" Cloud
+  page, which uses separate pages for edits.
+* A value of "false" means that Splunk Web loads the classic "Indexes" Cloud
+  page, which uses modals for edits.
 * Default: true
 
 enable_reports_vnext = <boolean>
@@ -460,6 +473,17 @@ enable_field_filters_ui = <boolean>
 * A value of "false" means that field filters are not visible in Splunk Web.
 * Default: true
 
+[feature:authentication_oauth]
+
+enable_authentication_oauth_ui = <boolean>
+* Whether or not Splunk Web displays the Open Authorization
+  (OAuth) configuration page as part of the Authentication
+  Methods configuration workflow.
+* A value of "true" means that Splunk Web displays the OAuth page.
+* A value of "false" means that Splunk Web does not display the
+  OAuth page.
+* Default: true
+
 [feature:identity_sidecar_scim]
 
 enabled = <boolean>
@@ -518,4 +542,7 @@ enable_reports_favorites = <boolean>
 * A value of "true" means users can favorite or unfavorite reports.
 * A value of "false" means users cannot favorite or unfavorite reports.
 * Default: true
+
+
+
 

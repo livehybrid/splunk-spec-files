@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 ############################################################################
 # OVERVIEW
@@ -270,6 +270,25 @@ rtSrchJobsQuota = <integer>
   * If 'enable_cumulative_quota' has a value of "false", those same 4 users can
     run a total of 400 real-time searches concurrently.
 * Default: 6
+
+queuedSearchQuotaMultiplier = <integer>
+* A number by which 'srchJobsQuota' is multiplied to determine
+  a user's 'queuedSearchQuota'.
+* 'queuedSearchQuota' is defined as the maximum number of searches
+   that a user who holds this role can queue concurrently.
+* NOTE: The maximum number of queued searches for a user
+  that holds this role is computed as:
+  'queuedSearchQuota' = 'queuedSearchQuotaMultiplier' x 'srchJobsQuota'.
+* If a user tries to run a search that would normally queue when they have
+  already reached their 'queuedSearchQuota', the search will be rejected.
+* A value of 0 means that the number of searches that a user who holds
+  this role may queue will only be limited by the
+  'hostwide_queued_search_limit' defined in limits.conf.
+* If a user has multiple roles with distinct 'queuedSearchQuotaMultiplier'
+  values, or has roles that inherit from roles with distinct
+  'queuedSearchQuotaMultiplier' values, the Splunk platform applies the
+  least restrictive 'queuedSearchQuotaMultiplier' to the user.
+* Default: 10
 
 srchMaxTime = <integer><unit>
 * The maximum amount of time that search jobs from specific users with this role are
@@ -1148,4 +1167,30 @@ ephemeralExpiration = <relative-time-modifier>
 [capability::edit_data_management_otelcollector]
 * Lets a user edit a list of managed Open Telemetry collectors.
 
+[capability::delete_oauth_config_clients]
+* Lets a user delete Open Authorization (OAuth) app clients for an OAuth configuration.
+
+[capability::list_oauth_config_clients]
+* Lets a user list OAuth app clients for an OAuth configuration.
+
+[capability::list_oauth_configs]
+* Lets a user list the OAuth configurations for external identity providers.
+
+[capability::edit_oauth_configs]
+* Lets a user edit and delete the OAuth configurations for external identity providers.
+
+[capability::list_oauth_config_role_mappings]
+* Lets a user list the role mappings for an OAuth configuration.
+
+[capability::edit_oauth_config_role_mappings]
+* Lets a user edit and delete the role mappings for an OAuth configuration.
+
+[capability::edit_internal_oauth_clients]
+* Lets a user edit OAuth internal clients.
+
+[capability::list_internal_oauth_clients]
+* Lets a user list existing OAuth internal clients.
+
+[capability::edit_storage_passwords_masking]
+* Lets a user edit the /storage/passwords cleartext password masking settings.
 

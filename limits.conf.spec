@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 ############################################################################
 # OVERVIEW
@@ -485,6 +485,17 @@ shc_adhoc_quota_enforcement = on | off | overflow
         the ad hoc search count to exceed cluster-wide quota limits. Do not
         change this setting without consulting Splunk Support.
 * Default: off
+
+hostwide_queued_search_limit = <integer>
+* Specifies the maximum number of queued searches for a search head.
+* When the hostwide_queued_search_limit is reached, searches that would
+  normally be queued will be rejected, until the number of queued searches does
+  not exceed the limit.
+* A value of 0 means there is no limit to the number of queued searches
+  on the search head. 
+* NOTE: Setting this value too high can cause performance issues, as Splunk
+  software might spend more time servicing queued jobs.
+* Default: 5000
 
 ############################################################################
 # Distributed search
@@ -2076,13 +2087,15 @@ rr_sleep_factor = <integer>
 ############################################################################
 # This section describes peer-side settings for distributed search throttling.
 [search_throttling::per_cpu]
-max_concurrent = <unsigned integer>
+max_concurrent = <non-negative decimal>
 * Sets the maximum number of remote searches for each available CPU.
-  The total number of searches for this throttling type is thus calculated as:
+* The total number of searches for this throttling type is calculated using:
   max_searches = max_concurrent x number_of_cpus
-* When the calculated value is exceeded, search requests are rejected until the number
-  of concurrent searches falls below the limit.
-* A value of 0 disables throttling.
+* When the calculated value is exceeded, search requests are rejected until
+  the number of concurrent searches falls below the 'max_concurrent' limit.
+* A value of a fractional number less than 1 means that the limit of concurrent 
+  searches is less than 1 search per CPU. 
+* A value of 0 means that throttling is turned off.
 * This setting is relevant only when used with 'remote_search_requests_throttling_type'.
 * Default: 12
 
@@ -3314,6 +3327,14 @@ enable_install_apps = <boolean>
 * Default: false
 
 
+enable_oauth2_for_applications = <boolean>
+* Whether or not OAuth authentication for third-party applications is turned on.
+* A value of "true" means OAuth authentication for third-party applications is  
+  turned on. 
+* A value of "false" means OAuth authentication for third-party applications is
+  turned off.
+* Default: true
+
 
 [http_input]
 
@@ -3364,21 +3385,22 @@ soft_preview_queue_size = <integer>
 [inputproc]
 
 file_tracking_db_threshold_mb = <integer>
-* The size, in megabytes, at which point the file tracking
-  database, otherwise known as the "fishbucket" or "btree", rolls over
-  to a new file.
-* The rollover process is as follows:
-  * After the fishbucket reaches 'file_tracking_db_threshold_mb' megabytes
-    in size, a new database file is created.
-  * From this point forward, the processor writes new entries to the
-    new database.
-  * Initially, the processor attempts to read entries from the new database,
-    but upon failure, falls back to the old database.
-  * Successful reads from the old database are written to the new database.
-* NOTE: During migration, if this setting doesn't exist, the initialization
-  code in splunkd triggers an automatic migration step that reads in the
-  current value for "maxDataSize" under the "_thefishbucket" stanza in
-  indexes.conf and writes this value into etc/system/local/limits.conf.
+* The maximum size (in megabytes) of the fishbucket file tracking checkpoint 
+  database.
+* When the fishbucket reaches this limit, the least recently used checkpoints 
+  are automatically deleted. 
+* Default: 500
+
+file_tracking_db_fsync_enabled = <boolean>
+* Flushes modified file tracking checkpoints to disk immediately, 
+  which ensures durability, but might negatively impact performance 
+  in some cases.
+* Turn off this setting only if performance of file tracking databases
+  is a concern.
+* When turned off, recently updated checkpoints might be lost in the event of
+  a power failure.
+*Default: true
+
 
 learned_sourcetypes_limit = <0 or positive integer>
 * Limits the number of entries added to the learned app for performance

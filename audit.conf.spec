@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 # This file contains possible attributes and values you can use to configure
 # auditing in audit.conf.

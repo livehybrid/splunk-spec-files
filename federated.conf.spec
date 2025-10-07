@@ -1,4 +1,4 @@
-#   Version 10.0.0
+#   Version 10.2.0
 #
 # This file contains possible setting and value pairs for federated provider entries
 # for use when the federated search functionality is enabled.
@@ -319,7 +319,7 @@ s2s_standard_mode_local_only_commands = <comma-separated list>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_standard_mode_unsupported_command:metadata]
-* This stanza controls whether the metadata command is blocked for 
+* This stanza controls whether the 'metadata' command is blocked for 
   Federated Search for Splunk on standard mode federated providers.
 
 active = <boolean>
@@ -335,7 +335,7 @@ active = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_standard_mode_unsupported_command:metasearch]
-* This stanza controls whether the metasearch command is blocked for 
+* This stanza controls whether the 'metasearch' command is blocked for 
   Federated Search for Splunk on standard mode federated providers.
 
 active = <boolean>
@@ -394,7 +394,7 @@ allow_target = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:delete]
-* This stanza controls whether the delete command is blocked for 
+* This stanza controls whether the 'delete' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
@@ -410,7 +410,7 @@ active = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:dump]
-* This stanza controls whether the dump command is blocked for 
+* This stanza controls whether the 'dump' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
@@ -424,9 +424,24 @@ active = <boolean>
   Support. 
 * Default: false
 
+[s2s_transparent_mode_unsupported_command:loadjob]
+* This stanza controls whether the 'loadjob' command is blocked for 
+  Federated Search for Splunk on transparent mode federated providers.
+
+active = <boolean>
+* Whether Splunk software blocks the 'loadjob' command for transparent mode 
+  federated search.
+  * A value of "true" means that the 'loadjob' command is not blocked for 
+    transparent mode federated search.
+  * A value of "false" means that the 'loadjob' command is blocked for 
+    transparent mode federated search. 
+* NOTE: Do not change this setting unless instructed to do so by Splunk 
+  Support. 
+* Default: false
+
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:map]
-* This stanza controls whether the map command is blocked for 
+* This stanza controls whether the 'map' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
@@ -442,7 +457,7 @@ active = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:run]
-* This stanza controls whether the run command is blocked for 
+* This stanza controls whether the 'run' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
@@ -458,7 +473,7 @@ active = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:runshellscript]
-* This stanza controls whether the runshellscript command is blocked for 
+* This stanza controls whether the 'runshellscript' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
@@ -474,7 +489,7 @@ active = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:script]
-* This stanza controls whether the script command is blocked for 
+* This stanza controls whether the 'script' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
@@ -490,7 +505,7 @@ active = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:sendalert]
-* This stanza controls whether the sendalert command is blocked for 
+* This stanza controls whether the 'sendalert' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
@@ -506,7 +521,7 @@ active = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:sendemail]
-* This stanza controls whether the sendemail command is blocked for 
+* This stanza controls whether the 'sendemail' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
@@ -522,7 +537,7 @@ active = <boolean>
 
 # Change this setting only when instructed to do so by Splunk Support.
 [s2s_transparent_mode_unsupported_command:rest]
-* This stanza controls whether the rest command is blocked for 
+* This stanza controls whether the 'rest' command is blocked for 
   Federated Search for Splunk on transparent mode federated providers.
 
 active = <boolean>
