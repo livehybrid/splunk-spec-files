@@ -1,4 +1,4 @@
-#   Version 10.2.2
+#   Version 10.4.0
 #
 ############################################################################
 # OVERVIEW
@@ -616,6 +616,24 @@ remotePath = <root path for remote volume, prefixed by a URI-like scheme>
   depending on the underlying storage type.
 * If 'remotePath' is specified, the 'coldPath' and 'thawedPath' settings are
   ignored. However, you must still specify them.
+
+mdlIndex = <boolean>
+* A value of "true" means the Machine Data Lake ecosystem uses this index, and
+  Splunk platform uses the 'mdlRemotePath' setting to configure the index's
+  remote storage path.
+* A value of "false" means this index is only a regular index, the Machine
+  Data Lake ecosystem won't use it, and Splunk platform instead uses the
+  'remotePath' setting to configure the index's remote storage path.
+* NOTE: Do not change this setting unless instructed to do so by Splunk Support.
+* Default: false
+
+mdlRemotePath = <root path for remote volume, prefixed by a URI-like scheme>
+* Overrides the 'remotePath' setting when the 'mdlIndex' setting has a value of
+  "true".
+* The path for the remote volume is formatted the same as for the 'remotePath'
+  setting, please refer to that setting for further information on formatting.
+* NOTE: Do not change this setting unless instructed to do so by Splunk Support.
+* Optional.
 
 maxBloomBackfillBucketAge = <nonnegative integer>[smhd]|infinite
 * If a (warm or cold) bucket with no bloomfilter is older than this,
@@ -2388,6 +2406,16 @@ remote.s3.enable_signed_payloads  = <boolean>
 * Valid only for remote.s3.signature_version = v4
 * Default: true
 
+remote.s3.object_locks_retention_period = <integer>
+* The retention period, in days, for AWS S3 Object Locks that splunkd
+  applies to new objects in remote storage.
+* For Dynamic Data: Active Searchable (DDAS), configure this setting
+  to match the number of days that you want to keep version history
+  in the DDAS AWS S3 bucket, for example, 15.
+* A value of 0 means that Object Lock is deactivated.
+* NOTE: Do not change unless instructed to do so by Splunk Support.
+* Supported only on Splunk Cloud Platform.
+* Default: 0
 
 remote.s3.retry_policy = max_count
 * Sets the retry policy to use for remote file operations.

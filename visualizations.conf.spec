@@ -1,4 +1,4 @@
-#   Version 10.2.2
+#   Version 10.4.0
 #
 # This file contains definitions for visualizations an app makes available
 # to the system. If you want your app to share visualizations with the system, 
@@ -46,6 +46,17 @@ search_fragment = <string>
 * Required.
 * Typically the last pipe or pipes in a search query.
 * Default: ""
+
+framework_type = [legacy_visualization|studio_visualization]
+* The framework type that the custom visualization is built on.
+* Optional.
+* The visualization system supports the following visualization framework types:
+* - legacy_visualization: legacy custom visualization framework based in Backbone. 
+    Visualization options are defined via 'formatter.html'.
+* - studio_visualization: Dashboard Studio custom visualization framework. 
+    This is an implementation-agnostic framework for visualizations
+    designed specifically for Dashboard Studio.
+* Default: legacy_visualization
 
 default_height = <integer>
 * The default height of the visualization, in pixels.

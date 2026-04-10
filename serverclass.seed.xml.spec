@@ -1,4 +1,4 @@
-#   Version 10.2.2
+#   Version 10.4.0
 
 <!--
 # This configuration is used by deploymentClient to seed a Splunk installation with applications, at startup time.
@@ -37,7 +37,6 @@
         <!--
         # Please See serverclass.conf.spec for how these properties are used.
         -->
-        <continueMatching>true</continueMatching>
         <restartSplunkWeb>false</restartSplunkWeb>
         <restartSplunkd>false</restartSplunkd>
         <stateOnClient>enabled</stateOnClient>
