@@ -1,4 +1,4 @@
-#   Version 10.2.3
+#   Version 10.4.0
 #
 ############################################################################
 # OVERVIEW
@@ -42,6 +42,19 @@
 enabled = <bool>
 * Specifies whether workload management has been enabled on the system or not.
 * This setting only applies to the default stanza as a global setting.
+* Default: false
+
+allow_basic = <boolean>
+* Whether or not the Splunk platform allows workload management to run in
+  BASIC mode.
+* A value of "true" means the Splunk platform allows workload management to
+  run in BASIC mode, such as when the host cannot use ADVANCED mode or when
+  systemd delegation is not configured for ADVANCED mode.
+* A value of "false" means the Splunk platform does not allow BASIC mode,
+  and the policy may deactivate workload management if only BASIC mode is
+  available.
+* NOTE: Do not change this setting unless instructed to do so by Splunk
+  Support.
 * Default: false
 
 default_pool = <string>
