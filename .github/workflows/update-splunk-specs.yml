@@ -118,7 +118,6 @@ jobs:
           commit-message: "Update Splunk spec files from version ${{ steps.get_version.outputs.version }} build ${{ steps.get_version.outputs.build }}"
           base: master
           branch: auto-${{ steps.get_version.outputs.version }}-${{ steps.get_version.outputs.build }}
-          branch-suffix: random
           title: "Update Splunk spec files from version ${{ steps.get_version.outputs.version }} build ${{ steps.get_version.outputs.build }}"
           body: |
             This PR was automatically created to update Splunk spec files from the latest Splunk Enterprise release.
