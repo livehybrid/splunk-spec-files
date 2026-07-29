@@ -1,4 +1,4 @@
-#   Version 10.4.0
+#   Version 10.4.2
 #
 # This file contains possible settings and values for configuring
 # authentication via authentication.conf.
@@ -881,6 +881,24 @@ saml_negative_cache_timeout = <nonnegative decimal>
 * This setting does not prevent SAML queries on login. Login always queries the SAML
   provider to confirm that a user exists.
 * Default: 3600
+
+saml_negative_cache_max_entries = <positive integer>
+* The maximum number of users that the Splunk platform keeps in the
+  in-memory SAML negative cache.
+* After the cache reaches this size, the Splunk platform evicts the
+  least-recently-used entries.
+* This setting is optional.
+* Default: 1000
+
+preserveNegativeCache = <boolean>
+* Whether or not the Splunk platform retains in-memory SAML negative-cache
+  entries across authentication reloads.
+* A value of "false" means the Splunk platform clears the in-memory SAML
+  negative-cache entries during authentication reload.
+* A value of "true" means the Splunk platform retains in-memory SAML
+  negative-cache entries across authentication reloads.
+* This setting is optional.
+* Default: true
 
 scriptPath = <string>
 * The name of the authentication extension script to run.
@@ -2062,6 +2080,24 @@ maxRequestAge = <integer>
   to take effect.
 * This setting is optional.
 * Default: 3600 (1 hour)
+
+strictPeerNameValidation = <boolean>
+* Whether or not the 'services/admin/auth-tokens' REST endpoint requires
+  requests to include a peer name that has a configured peer-specific
+  distributed search public key.
+* A value of "true" means the endpoint rejects requests that do not include
+  'peername', or that include a peer name without a peer-specific public key,
+  before completing signature verification.
+* A value of "false" means the endpoint preserves the legacy behavior and
+  might fall back to localhost distributed search key material during
+  signature verification.
+* This setting needs to be consistent between all nodes
+  in a distributed environment. If nodes have different values, authentication
+  token requests can succeed on some nodes and fail on others.
+* You must restart the Splunk platform for changes to this setting to
+  take effect.
+* This setting is optional.
+* Default: false
 
 #####################
 # Splunk Token Settings

@@ -1,4 +1,4 @@
-#   Version 10.4.0
+#   Version 10.4.2
 #
 ############################################################################
 READ THIS FIRST: Should you deploy field filters in your organization?

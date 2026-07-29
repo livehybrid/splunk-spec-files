@@ -1,4 +1,4 @@
-#   Version 10.4.0
+#   Version 10.4.2
 #
 ############################################################################
 # OVERVIEW
@@ -2694,6 +2694,15 @@ input_errors_fatal = <boolean>
 * Certain kinds of errors cause searches to fail no matter how this setting is
   set.
 * Default: false
+
+scripted_lookup_raw_write_enforcement = [warn|block]
+* Controls how Splunk platform handles raw configuration writes through the
+  /properties/transforms and /configs/conf-transforms files, when the resulting
+  transforms.conf stanza would create or edit a scripted lookup definition and
+  the caller does not have the required external lookup capability.
+* A value of "warn" logs a warning and allows the write.
+* A value of "block" rejects the write.
+* Default: warn
 
 enable_splunkd_kv_lookup_indexing = <boolean>
 * This setting determines whether KV Store lookup indexing is performed
@@ -5695,3 +5704,16 @@ view_cleartext_spl_rest = <boolean>
 * A value of "false" means that the command cannot return cleartext passwords
   when it makes calls to the "/storage/passwords" endpoint.
 * Default: true
+
+mask_encr_password = <boolean>
+* Whether or not the Splunk platform masks the 'encr_password' field in responses from the
+  "/storage/passwords" REST endpoint.
+* A value of "true" means the 'encr_password' field is replaced with a
+  static placeholder value that does not contain the actual encrypted
+  secret. The placeholder uses the "$7$" prefix followed by asterisks.
+* A value of "false" means the 'encr_password' field returns the actual
+  encrypted password value.
+* This setting applies to both direct REST API calls and the SPL 'rest'
+  command. There is no separate per-path control for this setting, unlike
+  'view_cleartext_spl_rest' which only affects the SPL 'rest' command.
+* Default: false
