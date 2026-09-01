@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.3
 #
 ############################################################################
 # OVERVIEW
@@ -643,7 +643,9 @@ deactivate_custom_mako_templates = <boolean>
   $SPLUNK_HOME/etc/apps/<app>/appserver/templates and $SPLUNK_HOME/etc/apps/
   <app>/appserver/modules directories.
 * A value of "false" means Splunk Web allows custom app Mako templates in those
-  directories.
+  directories, with a WARN message on each custom app Mako template load
+  indicating that the template is deprecated and is scheduled for removal in an
+  upcoming release.
 * Regardless of this setting, Splunk Web always allows first-party templates in
   the $SPLUNK_HOME/share/splunk/search_mrsparkle directory.
 * Default: false
@@ -655,7 +657,9 @@ deactivate_custom_cherrypy_controllers = <boolean>
   directory are not registered, causing all /custom/<app>/* routes to return
   a 404 error.
 * A value of "false" means Splunk Web allows custom app CherryPy controllers in
-  those directories.
+  those directories, with a WARN message at controller registration and on each
+  request indicating that the controller is deprecated and is scheduled for
+  removal in an upcoming release.
 * This setting only affects the /custom/<app>/* directory. It does not affect
   REST endpoints, views, dashboards, and static assets.
 * Default: false

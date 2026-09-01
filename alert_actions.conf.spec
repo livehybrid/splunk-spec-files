@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.3
 #
 ############################################################################
 # OVERVIEW
@@ -101,6 +101,16 @@ payload_format = [xml|json]
 * Configure the format the alert script receives the configuration via
   STDIN.
 * Default: xml
+
+passSystemAuth = <boolean>
+* Whether or not to include a 'splunk-system-user' authentication token in
+  the payload that the Splunk platform sends to a custom alert action script,
+  in addition to the per-search 'session_key' token.
+* A value of "true" means the Splunk platform includes the token in the
+  'system_authtoken' field in the payload.
+* A value of "false" means the Splunk platform includes only the per-search
+  'session_key' token in the payload.
+* Default: false
 
 label = <string>
 * For custom alert actions, defines the label that is shown in the UI.
