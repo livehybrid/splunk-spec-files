@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 ############################################################################
 # OVERVIEW
@@ -51,6 +51,8 @@ srchFilterSelecting = <boolean>
     (sourcetype!=ex3 AND index=main)) AND ((sourcetype=ex2))
 * Default: true
 
+[role-settings]
+reservedRoleNames=o11y_admin;o11y_power;o11y_usage;o11y_read_only
 
 [capability::<capability>]
 * DO NOT edit, remove, or add capability stanzas. The existing capabilities
@@ -65,6 +67,105 @@ srchFilterSelecting = <boolean>
   * view_license1
 * Descriptions of specific capabilities are listed below.
 
+[policy::<policy name>]
+* For internal use only, currently under development and not yet released.
+* Definition of an authorization policy that provides fine-grained control over
+  authorization capabilities, enabling granular access management.
+
+access = <string>
+* The rules that define a policy and grant access based on specified conditions.
+* Must be a valid JavaScript Object Notation (JSON) document. The system 
+  ignores invalid JSON.
+* A policy definition includes an 'allow' subsection, which outlines the 'conditions'
+  that must be met for access to be granted.
+* Each condition is defined as an object with 'operation', 'attr', and 'values'
+  or 'valueRefs' fields. There can be multiple conditions in a policy.
+* The following operations are supported:
+  - "oneOf": The condition is satisfied when the attribute has a single value that
+    matches any of the values in the 'values' or 'valueRefs' arrays. Supports
+    wildcard patterns (for example, "NameA*", "*NameB", "*NameC*").
+  - "intersects": The condition is satisfied when the attribute is a list and at
+    least one element in the list matches any of the values in the 'values' or
+    'valueRefs' arrays. Supports wildcard patterns.
+* The 'attr' field specifies the attribute path that the Splunk platform
+  evaluates against the specified values.
+* The 'values' array contains literal values to compare against.
+* The 'valueRefs' array contains attribute references that the Splunk platform
+  resolves from the authorization context when it evaluates the condition. This
+  allows conditions to compare one context attribute against another (for example,
+  comparing a resource attribute against a user attribute).
+  - For "oneOf", you can specify multiple valueRefs. Each referenced attribute
+    must resolve to a single value (not a list).
+  - For "intersects", you can specify exactly one valueRef. The referenced
+    attribute can resolve to either a list or a single value. If it resolves
+    to a list, the Splunk platform flattens its elements into individual values
+    for intersection checking against the condition's 'attr'. If it resolves to
+    a single value, the Splunk platform treats it as a single-element list.
+  - You can specify both 'values' and 'valueRefs' in the same condition. The
+    Splunk platform combines the resolved values for evaluation.
+  - If a referenced attribute is missing from the context, the Splunk platform
+    skips it.
+* A policy is satisfied when all its conditions are met.
+* Example using oneOf:
+    { "allow": {
+        "conditions": [
+          {
+            "operation": "oneOf",
+            "attr": "resource::attribute::name",
+            "values": ["NameA", "NameB"]
+          },
+          {
+            "operation": "oneOf",
+            "attr": "resource::attribute::category",
+            "values": ["CategoryX", "CategoryY"]
+          }
+        ]
+      }
+    }
+  This example policy allows access only to resources whose 'name' attribute is
+  either 'NameA' or 'NameB', and whose 'category' attribute is either 'CategoryX'
+  or 'CategoryY'.
+* Example using intersects:
+    { "allow": {
+        "conditions": [
+          {
+            "operation": "intersects",
+            "attr": "resource::attribute::tags",
+            "values": ["production", "staging"]
+          }
+        ]
+      }
+    }
+  This example allows for access when the resource's 'tags' attribute
+  contains at least one of "production" or "staging".
+* Example using valueRefs with oneOf:
+    { "allow": {
+        "conditions": [
+          {
+            "operation": "oneOf",
+            "attr": "resource::attribute::owner",
+            "valueRefs": ["user::entity::name"]
+          }
+        ]
+      }
+    }
+  This example allows access when the resource's 'owner' attribute matches the
+  current user's 'name' attribute from the authorization context.
+* Example using valueRefs with intersects:
+    { "allow": {
+        "conditions": [
+          {
+            "operation": "intersects",
+            "attr": "resource::attribute::allowed_roles",
+            "valueRefs": ["user::entity::roles"]
+          }
+        ]
+      }
+    }
+  This example allows access when any of the resource's 'allowed_roles' overlap
+  with the user's 'roles'. If 'user::entity::roles' is a list (for example,
+  ["admin", "editor"]), its elements are flattened and checked individually
+  against the resource's 'allowed_roles' list.
 
 [role_<roleName>]
 * Defines a role with the name '<roleName>'.
@@ -565,6 +666,10 @@ ephemeralExpiration = <relative-time-modifier>
 * For full access to listing users, roles, and capabilities, the user must also
   have or assign the 'list_all_users' capability.
 
+[capability::list_auth_policies]
+* Currently not supported. This setting is related to a feature
+  that is still in development.
+* Lets a user list all authorization policies.
 
 [capability::edit_tokens_settings]
 * Lets a user access all token auth settings in the system, such as turning the
@@ -699,6 +804,8 @@ ephemeralExpiration = <relative-time-modifier>
 * Lets the user add and edit journald inputs. 
 * This input is not available on Windows.
 
+[capability::edit_modinput_search_artifacts_helper]
+* Lets a user add and edit search artifacts helper inputs.
 
 [capability::edit_modinput_winhostmon]
 * Lets a user add and edit inputs for monitoring Windows host data.
@@ -758,6 +865,10 @@ ephemeralExpiration = <relative-time-modifier>
   capability when you want to grant permission to edit the owner of a
   saved search. Assign only to privileged roles.
 
+[capability::edit_auth_policies]
+* Currently not supported. This setting is related to a feature
+  that is still in development.
+* Lets a user edit authorization policies.
 
 [capability::edit_scripted]
 * Lets a user create and edit scripted inputs.
@@ -1270,7 +1381,9 @@ ephemeralExpiration = <relative-time-modifier>
 * Lets a user edit and delete the role mappings for an OAuth configuration.
 
 [capability::edit_internal_oauth_clients]
-* Lets a user edit OAuth internal clients.
+* Lets a user create, edit, and remove internal OAuth clients, and assign roles
+  to those clients. Role assignments follow the same authorization rules as
+  assigning roles to users with the 'edit_user' capability.
 
 [capability::list_internal_oauth_clients]
 * Lets a user list existing OAuth internal clients.
@@ -1330,7 +1443,84 @@ ephemeralExpiration = <relative-time-modifier>
 * Lets a user create, update, and delete configuration objects using the 
  /services/configs/v1 REST API Endpoint.
 
+[capability::edit_transforms]
+* Lets a user edit transforms through the services/properties/transforms
+  endpoint.
+
 [capability::list_conf_objects]
 * Lets a user list and read configuration objects using the 
  /services/configs/v1 REST API Endpoint.
 
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+[capability::edit_auto_ui_updates]
+* Lets a user enable automatic ui updates in Splunk Cloud Platform.
+
+[capability::edit_ip_allow_list]
+* Lets a user edit their IP Allow List in Splunk Cloud Platform.
+
+[capability::edit_webhook_allow_list]
+* Lets a user edit their webhook allow list in Splunk Cloud Platform.
+
+[capability::edit_limits_conf]
+* Lets a user edit limits.conf using the Admin Config Service (ACS) API in
+  Splunk Cloud Platform.
+
+[capability::edit_dashboard_allow_list]
+* Lets a user edit their dashboards trusted domains list in Splunk Cloud Platform 
+  and Splunk Enterprise.  This controls the list of allowed domains for embedded 
+  content in dashboards.
+
+[capability::export_apps]
+* Lets a user export non-restricted apps using the Admin Config Service (ACS)
+  apps/export endpoint in Splunk Cloud Platform.
+
+[capability::edit_config_tracker_conf]
+* Lets a user edit the config tracker configuration using the Admin Config
+  Service (ACS) API in Splunk Cloud Platform.
+
+[capability::list_xrdr_conf]
+* Grants the user read only access for XRDR (Cross Region Disaster Recovery)
+configurations and endpoints. 
+
+[capability::edit_xrdr_conf]
+* Lets a user have read and write capabilities for XRDR (Cross Region Disaster 
+Recovery) configurations and endpoints.
+
+[capability::list_external_oauth_clients]
+* Lets a user list existing OAuth external clients.
+
+[capability::edit_external_oauth_clients]
+* Lets a user edit OAuth external clients.
+
+[capability::delete_external_oauth_clients]
+* Lets a user delete OAuth external clients.
+
+[capability::rotate_external_oauth_client_secrets]
+* Lets a user rotate OAuth external client secrets.
+
+[capability::cisco_tenant_admin]
+* Grants the user tenant admin permissions in Cisco Unified Identity (CUI).
+
+[capability::list_topology]
+* Lets a user read and list Splunk topology endpoints,
+  which are API paths that provide information about
+  data and infrastructure relationships.
+
+############################################################################
+# Settings used to control commands started by Splunk
+############################################################################
+
+[commands:user_configurable]
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+prefix = <path>
+* All non-internal commands started by splunkd are prefixed with this
+  string, allowing for "jailed" command execution.
+* Should be only one word.  In other words, commands are supported, but
+  commands and arguments are not.
+* Applies to commands such as: search scripts, scripted inputs, SSL
+  certificate generation scripts.  (Any commands that are
+  user-configurable).
+* Does not apply to trusted/non-configurable command executions, such as:
+  splunk search, splunk-optimize, gunzip.
+* $SPLUNK_HOME is expanded.
+* No default.

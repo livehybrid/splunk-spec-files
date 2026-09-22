@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 # This file contains possible setting and value pairs for federated provider entries
 # for use when the federated search functionality is enabled.
@@ -27,12 +27,70 @@
 * <unique-federated-provider-name> can contain only alphanumeric characters and 
   underscores.
 
-type = [splunk]
+type = [splunk | aws_s3 | aws_lake]
 * Specifies the type of the federated provider.
 * A setting of 'splunk' means that the federated provider is a Splunk
   deployment.
+* A setting of 'aws_s3' means that you are configuring this federated provider
+  to facilitate access to a data source in Amazon S3. This setting is reserved
+  for Federated Search for Amazon S3.
+* A setting of 'aws_lake' means that you are configuring this federated provider
+  to facilitate access to a data source in Amazon Security Lake (ASL). This 
+  setting is reserved for Data Lake Federated Analytics.
 * Default: splunk
 
+subtype = [cisco_sal]
+* The subtype of the federated provider when 'type' has a value of
+  "aws_s3".
+* A value of "cisco_sal" means that this is a Cisco Security Analytics and
+  Logging (SAL) integration that provides federated access to Cisco-managed
+  Amazon Web Services (AWS) resources.
+* This setting recognizes no other values.
+* This setting is required if you integrate with Cisco SAL. Do not set it
+  otherwise.
+* No default.
+
+sal_token = <string>
+* The Cisco Security Analytics and Logging token for authenticating with 
+  the SAL API.
+* This token is provided by Cisco SAL. The token must have appropriate scopes 
+  for federation resource management.
+* This setting is required when 'subtype' has a value of "cisco_sal". Do not
+  set it otherwise.
+* The Splunk platform encrypts the token when it stores the token in the 
+  provider configuration.
+* No default.
+
+sal_tenant_id = <string>
+* The unique tenant identifier for the Cisco Security Analytics and Logging 
+  (SAL) tenant.
+* Cisco SAL provides this tenant ID. The 'sal_tenant_id' uniquely identifies the 
+  customer's SAL environment and corresponds to the 'tentant_name' setting.
+* This setting is required when 'subtype' has a value of "cisco_sal". Do not
+  set it otherwise.
+* No default.
+
+sal_tenant_name = <string>
+* The human-readable name for the Cisco Security Analytics and Logging (SAL) 
+  tenant.
+* Cisco SAL provides this name. The 'sal_tenant_name' corresponds to the 
+  'sal_tenant_id' setting.
+* This setting is required when 'subtype' has a value of "cisco_sal". Do not
+  set it otherwise.
+* No default.
+
+
+sal_dataset = <string>
+* The dataset type for Cisco Security Analytics and Logging (SAL)
+  dataset discovery operations.
+* The Splunk platform uses this setting with the 'getSalDatasets'
+  REST API endpoint to retrieve metadata for specific SAL dataset types.
+* The Splunk platform uses this setting only as a parameter for the
+  'getSalDatasets' API call. It does not store the setting in the provider
+  configuration.
+* This setting is required when Splunk software must call the 'getSalDatasets' 
+  endpoint. Do not set it otherwise.
+* No default.
 
 hostPort = <Host_Name_or_IP_Address>:<service_port>
 * Specifies the protocols required to connect to a federated provider.
@@ -166,6 +224,108 @@ mode = [ standard | transparent ]
   the federated search head.
 * Default: standard
 
+aws_account_id = <string>
+* Specifies a 12-digit Amazon Web Services (AWS) account ID.
+* Required when 'type=aws_s3' or 'type=aws_lake'. Do not set otherwise.
+  * When 'type=aws_s3', the 'aws_account_id' is the account where the 
+    'database' exists.
+  * When 'type=aws_lake', the 'aws_account_id' is the account where the 
+    'remote_aws_database' exists.
+    * When 'type=aws_lake', you do not need to set the 'aws_account_id'. Splunk 
+      software automatically extracts the 'aws_account_id' from the 
+      'resourceShareName' and 'resourceShareARN'.
+* Along with 'aws_region', this setting enables connection to an Amazon S3 data
+  source indicated in a Federated Search for Amazon S3 search.
+* No default.
+
+database = <string>
+* Specifies the name of the AWS Glue database that contains the data schema
+  and AWS Glue tables.
+* Required when 'type=aws_s3' or 'type=aws_lake'. Do not set otherwise.
+* When 'type=aws_lake', 'database' refers to the database that Splunk software 
+  generates based on the 'remote_aws_database' setting and then adds to the 
+  Splunk-owned AWS account. You do not need to set it.
+* No default.
+
+data_catalog = <string>
+* Specifies the Amazon Resource Name (ARN) for an AWS Glue data catalog. The
+  ARN points to an AWS account.
+* Required when 'type=aws_s3' or 'type=aws_lake'. Do not set otherwise.
+* When 'type=aws_s3, this value is generated automatically from a combination of the
+  'aws_account_id' and 'aws_region' settings. You do not need to set it.
+* When 'type=aws_lake, this value is generated automatically from a combination of the
+  Splunk-owned AWS account ID and 'aws_region' setting. You do not need to set it.
+* If you must enter this setting manually, the format is as follows:
+  * glue:arn:aws:glue:<aws_region>:<aws_account-id>:catalog
+* CAUTION: If you overwrite this setting with a setting of your own, you risk
+  causing your Federated Search for Amazon S3 searches to fail.
+* No default.
+
+aws_glue_tables_allowlist = <string>
+* Specifies a comma-separated list of AWS Glue tables from which Federated 
+  Search for Amazon S3 can get metadata and data schemas.
+* This list is specific to this federated provider.
+* Required when 'type=aws_s3' or 'type=aws_lake'. Do not set otherwise.
+* No default.
+
+aws_s3_paths_allowlist = <string>
+* Specifies a comma-separated list of Amazon S3 location paths that you can 
+  search with Federated Search for Amazon S3.
+* An Amazon S3 location path can contain wildcards only at the end of the path.
+* This list is specific to this federated provider.
+* Required when 'type=aws_s3'. Do not set otherwise.
+* No default.
+
+aws_kms_keys_arn_allowlist = <string>
+* Specifies a comma-separated list of Amazon KMS Key ARNs (Amazon Resource 
+  Names) that encrypt the Amazon S3 objects specified to be searched by 
+  Federated Search for Amazon S3.
+* Optional when 'type=aws_s3'. Do not set otherwise.
+* No default.
+
+remote_aws_database = <string>
+* Specifies the name of the original AWS Glue database that contains the data 
+  schema and the AWS Glue tables specified in the 'aws_glue_tables_allowlist'. 
+* Splunk software creates a local alias to this database under the 'database' 
+  setting on the Splunk-owned AWS account.
+* Required when 'type=aws_lake'. Do not set otherwise.
+* No default.
+
+resourceShareName = <string>
+* Specifies the name of the Resource Share. This must be suffixed with the 
+  provided external ID. Must correspond to the same Resource Share as the 
+  'resourceShareARN'.
+* Required when 'type=aws_lake'. Do not set otherwise.
+* No default.
+
+resourceShareARN = <string>
+* Specifies a Resource Share ARN (Amazon Resource Name). Must correspond to the 
+  same Resource Share as the 'resourceShareName'.
+* Required when 'type=aws_lake'. Do not set otherwise.
+* No default.
+
+manage_aws_glue_tables = <boolean>
+* Specifies whether Splunk can manage AWS Glue tables.
+* A setting of 'false' means that Splunk is not allowed to manage AWS Glue 
+  tables within this federated provider.
+* A setting of 'true' means that Splunk can create and manage AWS Glue tables 
+  within this federated provider.
+* If 'supports_only_splunk_managed_glue_tables' is set to 'true', 
+  'manage_aws_glue_tables' must be set to 'true'.
+* Optional when 'type=aws_s3'. Do not set otherwise.
+* Default: false
+
+supports_only_splunk_managed_glue_tables = <boolean>
+* Specifies whether this federated provider supports only Splunk-managed AWS 
+  Glue tables.
+* A setting of 'false' means that both Splunk-managed and user-managed AWS Glue 
+  tables are allowed for this federated provider.
+* A setting of 'true' means that this federated provider permits only AWS Glue 
+  tables created and managed by Splunk.
+* If 'manage_aws_glue_tables' is missing or set to 'false', this 
+  setting must not be specified.
+* Optional when 'type=aws_s3'. Do not set otherwise.
+* Default: false
 
 #
 # General Federated Search Stanza

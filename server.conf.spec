@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 ############################################################################
 # OVERVIEW
@@ -70,6 +70,17 @@ hostnameOption = [ fullyqualifiedname | clustername | shortname ]
 * Cannot be an empty string.
 * Default: shortname
 
+max_crashlog_files = <unsigned integer>
+* The maximum number of crash-*.log files to keep in
+  the $SPLUNK_HOME/var/log/splunk directory.
+* When the Splunk platform starts and periodically while splunkd is running,
+  it prunes the oldest crash log files when the number of crash log files
+  exceeds this setting.
+* The Splunk platform uses the default if you specify an invalid value.
+* If you configure this setting to be lower than 5, the software sets 
+  it at 5.
+* Default: 20
+
 sessionTimeout = <nonnegative integer>[s|m|h|d]
 * The amount of time before a user session times out, expressed as a
   search-like time range.
@@ -77,6 +88,16 @@ sessionTimeout = <nonnegative integer>[s|m|h|d]
   "7200s" (7200 seconds, or two hours)
 * Default: "1" (1 hour)
 
+sessionRevalidateUserConfigTimeout = <nonnegative integer>
+* The amount of time, in seconds, after which roles, capabilities, and preferences
+  are recomputed for internal caching for a session.
+* Only for internal/expert use.
+* Default: 5
+
+sessionUserCacheSize = <nonnegative integer>
+* Number of users for whom roles, capabilities, and preferences are cached.
+* Only for internal/expert use.
+* Default: 200
 
 invalidateSessionTokensOnLogout = <boolean>
 * A value of "true" means the SHC invalidates any tokens associated with a logged-out session
@@ -327,21 +348,29 @@ pipelineSetAutoScale = <boolean>
   using the "blocked_queue_count" pipeline set selection policy.
 * See the 'pipelineSetSelectionPolicy' setting for more
   information on the "blocked_queue_count" policy.
-* A value of "true" also means that intermediate forwarders scale
-  the number of pipeline sets to half the number of available virtual CPUs.
+* A value of "true" for this setting has the following impacts on certain
   * If a workload management pool exists, then:
-    * Splunk instance scales up the number of pipeline sets to the number of
-      virtual CPUs for the 'ingest' workload pool divided by 4.
+    * Splunk Cloud Platform scales up the number of pipeline sets to the number
+      of virtual CPUs for the 'ingest' workload pool divided by 4.
   * If a workload management pool does not exist, then:
-    * Splunk instance types scale up the number of pipeline sets to the
+    * Victoria Experience indexers scale up the number of pipeline sets to the
+      number of available virtual CPUs divided by 12.
+    * Classic Experience indexers scale up the number of pipeline sets to the
+      number of available virtual CPUs divided by 10.
+    * All other instance types scale up the number of pipeline sets to the
       number of available virtual CPUs divided by 15.
+  * Splunk Cloud Platform Ingestors scale up the number of pipeline sets
+    to the number of available virtual CPUs.
+  * Search the Splunk documentation for "Configure workload pools" for more
+    information on workload management pools, how to create and
+    manage them, and how to use the workload_pools.conf configuration file.
+  * If 'parallelIngestionPipelines' has a higher value than any of the
+    previously-described automatic calculations, then splunkd uses that value
+    instead to scale up the number of pipeline sets.
 * A value of "false" means that splunkd uses the value for
   'parallelIngestionPipelines' and does not scale the number of pipeline
   sets to meet demand.
-* If 'parallelIngestionPipelines' has a higher value than the
-  previously-described automatic calculations, then splunkd
-  uses that value instead to scale up the number of pipeline sets.
-* Default: false
+* Default: true
 
 pipelineSetSelectionPolicy = round_robin|weighted_random|blocked_queue_count
 * Specifies the pipeline set selection policy to use while selecting pipeline
@@ -578,6 +607,20 @@ encrypt_fields = <comma-separated list>
 * Default: a default list of fields containing passwords, secret keys, and identifiers:
   "server: :sslKeysfilePassword", "server: :sslPassword", "server: :pass4SymmKey",...
 
+workaround.cloud_specific.SPL-191293.include.<conf_file_name> = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Controls the logic on how certain parts of a .conf file
+  are edited. Specifically, controls the logic on whether or not stanzas
+  are overwritten when editing occurs on a certain .conf file.
+* A value of "true" means that the .conf file you specify is added to
+  an allow list. This allow list ensures that individual stanzas in a
+  file are preserved when file editing occurs. Only setting-value
+  pairs within the stanza are overwritten by the procedure if they already exist.
+* A value of "false" means that the .conf file is not added to
+  the allow list, and both the stanza and any setting-value pairs
+  within the stanza are overwritten, if they already exist, when editing occurs.
+* Default: false
 
 conf_cache_memory_optimization = <boolean>
 * Turns on or off memory optimization for configuration file caches for all
@@ -622,91 +665,15 @@ allowed_unarchive_commands = <comma-separated list>
   can run any shell command, which is a potential security risk.
 * Default: Empty string ('unarchive_cmd' can use any shell command.)
 
-############################################################################
-# Configuration Change Tracker
-############################################################################
-[config_change_tracker]
+[config_api_audit]
 disabled = <boolean>
-* Whether or not splunkd writes configuration changes to the 
-  configuration change log at $SPLUNK_HOME/var/log/splunk/configuration_change.log.
-* If set to "false", configuration changes are captured in
-  $SPLUNK_HOME/var/log/splunk/configuration_change.log.
-* If set to "true", configuration changes are not captured
-  in $SPLUNK_HOME/var/log/splunk/configuration_change.log.
-* Default: false
-
-mode = [auto|diff|track-only]
-* Determines the method used by 'config_change_tracker' to track and record
-  changes to .conf files.
-* A value of "auto" or "diff" means splunkd logs all configuration changes made to
-  .conf files, including changes to setting values. In this mode, config change
-  tracking only includes changes that could have an effect on your environment.
-  For example, if a file with a stanza and setting-value pair is created, updated,
-  or deleted, splunkd logs the change. But if an empty file or a stanza without any
-  setting-value pairs is added or deleted, splunkd does not log the change since it
-  will not have an impact. Similarly, splunkd does not track any comments that are
-  added to or removed from files.
-* A value of "track-only" means splunkd logs .conf file changes, but excludes
-  configuration setting values. In this mode, config change tracking includes
-  changes whether or not they can have an effect on your environment. For example,
-  splunkd logs a change for any updates to file content, or that come from a change
-  by the operating system. Splunkd also sees a comment that has been added to a .conf
-  file as a change, because that change results in a different file checksum.
-* Splunkd tracks all .conf files under the following directories:
-  * $SPLUNK_HOME/etc/system
-  * $SPLUNK_HOME/etc/apps
-  * $SPLUNK_HOME/etc/users
-  * $SPLUNK_HOME/etc/peer-apps
-  It also tracks changes to the following:
-  * $SPLUNK_HOME/etc/instance.cfg
-* The values "auto" and "diff" have the same behavior at this time. Setting the 
-  value to "auto" ensures that the instance will always use the latest feature set.
-* Default: auto
-
-denylist = <regular expression>
-* If set, splunkd does not monitor files for configuration change tracker if 
-  their path matches the specified regex.
-* No default.
-
-log_throttling_disabled = <boolean>
-* Describes whether or not splunkd logs config changes to a .conf file
-  that occur within the 'log_throttling_threshold_ms' time span as a single event.
-* A value of "false" means that splunkd logs all changes to a conf file within
-  the time span 'log_throttling_threshold_ms' as a single event.
-* A value of "true" means that splunkd logs all changes individually as
-  soon as it detects them.
-* This setting requires a Linux system with the "inotify" API for
-  file system event monitoring.
-* Do not change this setting without first consulting with Splunk Support.
+* Whether or not splunkd logs configuration changes and user
+  information to the 'audit' index.
+* A value of "true" means that splunkd does not capture configuration
+  changes to the 'audit' index.
+* A value of "false" means that splunkd captures configuration changes
+  to the 'audit' index.
 * Default: true
-
-log_throttling_threshold_ms = <positive integer>
-* The span of time, in milliseconds, during which splunkd logs multiple
-  changes to a .conf file as a single configuration change event.
-* If multiple changes are made to a conf file within the time span
-  'log_throttling_threshold_ms' milliseconds, splunkd logs those changes
-  as a single event.
-* Default: 10000
-
-exclude_fields = <comma-separated list>
-* One or more stanza keys that splunkd is to exclude when it writes
-  information about stanza configuration changes to the
-  configuration_change.log file.
-* The format for each entry is '<conf-file>:<stanza>:<key>'. Separate multiple 
-  entries with commas.
-* To exclude all keys under a stanza, use the '<conf-file>:<stanza>:*' format.
-* <stanza> can end with a '*' (asterisk). Splunkd treats this as a wildcard.
-* If <stanza> contains a colon, enclose it in quotes. For example:
-  'inputs.conf:"tcp-ssl:*":*'
-* This setting has no effect if 'mode' has a value of "track-only".
-* Example:
-  'server.conf:general:pass4SymmKey, authentication.conf:authentication:*'
-* No default.
-
-* NOTE: The [config_change_audit] stanza, which was previously mentioned in 
-  the Splunk version 8.2.0 documentation and configuration specification files,
-  is now DEPRECATED.
-
 
 ############################################################################
 # Deployment Configuration details
@@ -972,7 +939,7 @@ caTrustStorePath = <string>
   Debian/Ubuntu/Gentoo: /etc/ssl/certs/ca-certificates.crt
   Fedora/RHEL 6, 8, 9:        /etc/pki/tls/certs/ca-bundle.crt
   CentOS/RHEL 7:        /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-* No default.
+* Default: /etc/ssl/certs/ca-certificates.crt
 
 cipherSuite = <string>
 * A list of cipher suites for splunkd to use.
@@ -1964,7 +1931,7 @@ caTrustStore = <[splunk],[OS]>
 caTrustStorePath = <string>
 * See the description of 'caTrustStorePath' under the [sslConfig] stanza
   for details on this setting.
-* No default.
+* Default: /etc/ssl/certs/ca-certificates.crt
 
 sslCommonNameToCheck = <commonName1>, <commonName2>, ...
 * See the description of 'sslCommonNameToCheck' under the [sslConfig] stanza
@@ -2000,6 +1967,78 @@ ecdhCurves = <comma separated list>
   the $SPLUNK_HOME/etc/system/default/server.conf file for the
   current default.
 
+* Private app upload & installation workflow feature flags
+* To set default feature flags for the 3 different instances:
+*   Splunk Enterprise:
+*       allowInstallFromFile = true,
+*       requireAppInspect = false
+*   Splunk Cloud Single Instances:
+*       allowInstallFromFile = false,
+*       requireAppInspect = false
+*   Splunk Cloud Noah Instances:
+*       allowInstallFromFile = true,
+*       requireAppInspect = true,
+*       allowSplunkbaseConflict=false
+* For default settings of these feature flags on each type of stack, update in
+*   https://cd.splunkdev.com/cloudworks/puppet/control-repo/-/merge_requests/5021
+
+allowInstallFromFile = <boolean>
+* Whether or not to show install from file button on app management page
+* Default: 1 (true)
+
+requireAppInspect = <boolean>
+* Whether or not require AppInspect validations on uploaded apps
+* Default: 0 (false)
+
+filterAppInstallMethod = [simple|appmgmt_phase]
+* The install_method_* value for an app from the remote applications repository
+  must correspond to the value specified here, or the app won't be installed.
+* Default: simple
+
+app_inspect_endpoint = <string>
+* The base URL for the AppInspect API endpoint.
+* Default: https://appinspect.splunk.com/v1
+
+app_inspect_auth_endpoint = <string>
+* The URL for AppInspect authentication.
+* Default: https://api.splunk.com/2.0/rest/login/splunk
+
+app_inspect_vetted_endpoint_timeout = <integer>
+* Timeout in seconds for requests to the AppInspect vetted endpoint.
+* Default: 20
+
+checkCloudVetting = <boolean>
+* Determines whether to check if a remote application is vetted
+  for Splunk Cloud Platform.
+* A value of true means the app will be checked for cloud vetting status.
+* This setting pertains to splunkbase apps hosted at the location specified by
+  the 'checkCloudVettingForDomain' setting.
+* Note: Cloud vetting is an app validation process that uses Splunk Appinspect
+  to determine whether an app meets the requirements for deployment on
+  Splunk Cloud Platform. For more information about vetting, see
+  https://dev.splunk.com/enterprise/docs/releaseapps/cloudvetting/ page.
+* Default: false
+
+checkCloudVettingForDomain = <string>
+* Specifies the domain name of splunkbase apps that require a check for
+  cloud vetting status.
+* CAUTION: Do not change this setting without consulting Splunk Support.
+* Default: splunkbase.splunk.com
+
+reservedAppsIds = <comma-separated list>
+* Specifies the list of apps that ship with the Splunk platform by default,
+  by their app IDs.
+* The Splunk platform reserves app IDs in this list to prevent conflicts
+  with private apps that use the same app ID.
+* No default.
+
+allowSplunkbaseConflict = <boolean>
+* Switches on or off private app validation for Splunkbase apps.
+* A value of “true" allows uploading of apps with the same AppID/UID 
+  as a public Splunkbase app.
+* A value of "false" does not allow uploading of apps with the same 
+  AppID/UID as a public Splunkbase app.
+* Default: false
 
 ############################################################################
 # Misc. configuration
@@ -2115,7 +2154,7 @@ autoAdjustQueue = <boolean>
   automatically for all pipeline queues.
 * A value of "false" means splunkd does not adjust the 'maxSize'
   value automatically and you must configure it manually.
-* Default: false
+* Default: true
 
 [queue=<queueName>]
 
@@ -4740,7 +4779,11 @@ prevent_out_of_sync_captain = <boolean>
 replication_factor = <positive integer>
 * Determines how many copies of search artifacts are created in the cluster.
 * This must be set to the same value on all members.
+* When the [search_artifact_remote_storage] stanza includes "disabled = false",
+  it overrides any value directly set for 'replication_factor', causing
+  'replication_factor' to always have an effective value of 1.
 * Default: 3
+* Default (when [search_artifact_remote_storage] has disabled = false): 1
 
 pass4SymmKey = <string>
 * Secret shared among the members in the search head cluster to prevent any
@@ -5039,6 +5082,9 @@ captain_uri = [ static-captain-URI ]
 * The management URI of static captain is used to identify the cluster
   captain for a static captain.
 
+search_head_uri = <string>
+* The DNS hostname of the search head cluster load balancer.
+* No default.
 
 election = <boolean>
 * This is used to classify a cluster as static or dynamic (RAFT based).
@@ -5346,6 +5392,24 @@ member_add_decouple_artifact_reporting = <boolean>
   Support.
 * Default: true
 
+* Private app upload & installation workflow feature flags for Noah Search
+  Head Cluster.
+* To set default feature flags for the 3 different instances:
+*   Splunk Enterprise:
+*       ui_settings_mode = partial
+*   Splunk Cloud Single Instances:
+*       ui_settings_mode = partial
+*   Splunk Cloud Noah Instances:
+*       ui_settings_mode = full
+
+ui_settings_mode = [full|partial]
+* 'partial' allows browsing and viewing apps on splunkbase for Noah Search
+  Head Cluster.
+* 'full' allows installation, browsing and viewing apps on splunkbase.
+  Also enables creating local app and installation of an app from file for
+  Noah Search Head Cluster.
+* Not applicable for standalone environment.
+* Default: partial
 
 allow_concurrent_dispatch_savedsearch = <boolean>
 * The search head cluster captain might dispatch multiple saved searches to a member 
@@ -5520,7 +5584,21 @@ storageEngine = wiredTiger
 * Default: wiredTiger
 
 storageEngineMigration = <boolean>
-* DEPRECATED.
+* Whether or not you can migrate the KV Store storage engine on this instance.
+* Migrating the storage engine means changing the engine from 'mmap' to 
+  the newer 'wiredTiger'.
+* If you set this to "true", the instance lets you migrate the engine,
+  depending on the following scenarios:
+  * If this instance is standalone, you can migrate the engine during
+    an upgrade by enabling this setting with a "true" value as part of 
+    the upgrade process and answering affirmatively when that process 
+    prompts you, or after an upgrade by using the
+    'splunk migrate kvstore-storage-engine' CLI command.
+  * If it is a part of a search head cluster, you can perform the migration
+    using the '/services/shcluster/captain/kvmigrate/start' REST endpoint.
+* If you set this to "false", you cannot migrate the storage engine.
+* This setting is ignored if 'upgradeVersion' is enabled.
+* Default: false
 
 oplogSize = <integer>
 * The size of the replication operation log, in megabytes, for environments
@@ -5744,6 +5822,32 @@ max_restore_external_attempts = <positive integer>
   do so.
 * Default: 5
 
+upgradeVersion = <boolean>
+* Whether or not this Splunk platform instance will upgrade the KV store to the
+  latest version.
+* Set to true if this deployment will upgrade the KV store.
+* Only set this flag after the Splunk software upgrade tar file is untarred, but
+  before starting the splunkd process.
+* On fresh installations, A value of "true" means Splunk software attempts to
+  start with the latest KV Store version.
+* In single instance deployments, if set to true and the KV store data is in
+  the MMAPv1 storage engine, then at the time of Splunk software upgrade, the
+  deployment automatically migrates the MMAPv1 data to WiredTiger.
+  This might impact the time it takes to complete the upgrade.
+* For clustered deployments, the WiredTiger migration is not automatic. Trigger
+  the migration manually prior to upgrading the KV store. For more information, 
+  see "Migrate the KV store storage engine" in the Admin manual in the
+  Splunk documentation.
+* Default: false
+
+majorVersion = <string>
+* Specify the major version for KV store.
+* This flag is honored only if upgradeVersion is set to true.
+* On fresh installations, a value of "7.0" means Splunk software attempts to
+  start with KV store version 7.0.
+* Accepted values: 7.0, 8.0
+* Default: empty
+
 
 delayShutdownOnBackupRestoreInProgress = <boolean>
 * Whether or not splunkd should delay a shutdown if a KV Store backup or restore
@@ -5770,6 +5874,22 @@ percRAMForCache = <positive integer>
 * Default: 15
 
 
+externalKVStoreCollectionsSyncEnabled = <boolean>
+* Controls whether a collection's configuration is recovered and synchronized
+  with an external KV store after the connection to the KV store fails.
+* If set to "true": after the status of the external KV store is updated from
+  "failed" to "ready", any potential losses of the collection's configuration
+  are recovered and the configuration is resynchronized with the external
+  KV store.
+* If set to "false": after the status of the external KV store changes from
+  "failed" to "ready", the collection's configuration is not recovered
+  or resynchronized with the external KV store.
+* Default: true
+
+externalKVStoreCollectionsSyncPeriod = <positive int>
+* The scheduled time period, in seconds, for checking whether an external KV
+  store collection's configuration needs to be recovered. 
+* Default: 5
 
 kvstoreUpgradeCheckInterval = <integer>
 * How often, in seconds, to check the status of the KV store version upgrade.
@@ -5797,6 +5917,13 @@ postgresMigrateOnStartup = <boolean>
   migration.
 * Default: false
 
+cloudMigration = <boolean>
+* A value of "true" means that KV Store migrations use the Splunk Cloud KV
+  Service migration path, even when server.conf [general] instanceType is not
+  set to "cloud".
+* A value of "false" means that KV Store migrations use the KV Store type and
+  server.conf [general] instanceType settings to determine the migration path.
+* Default: true
 
 defaultCidrPrefixLength = <positive int>[0-32]|disabled
 * The default prefix length added to IPs without such prefix in CIDR match type
@@ -5812,7 +5939,7 @@ ocspValidation = <boolean>
   restart the KV store.
 * A value of "false" means OSCP validation is turned off. You must periodically
   download a CRL and restart KV store.
-* Default: true
+* Default: false
 
 
 ############################################################################
@@ -6001,6 +6128,11 @@ max_concurrent_uploads = <unsigned integer>
   storage.
 * Default: 8
 
+max_concurrent_post_upload_jobs = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The maximum number of buckets that can be reported to noah simultaneously.
+* Default: 2
 
 eviction_policy = <string>
 * The name of the eviction policy to use.
@@ -6225,6 +6357,47 @@ replicate_search_peers = <boolean>
   of a search head cluster, when this value to set to true.
 * Requires a healthy search head cluster with a captain.
 
+[prometheus]
+
+disabled = <boolean>
+* Set to true to disable the /services/metrics REST endpoint.
+* Default: true
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+allowList = <comma-separated list>
+* The control metrics that the /services/metrics REST endpoint is to list.
+* Only names that match an allow list entry are listed.
+* An empty list means all names are allowed.
+* Allow list entries can only contain letters, numbers, underscores, or
+  asterisks.
+* The asterisk character is a wildcard, and matches anything. For example,
+  'splunkd_*' matches 'splunkd_test', but not 'splunkd' or 'my_splunkd_test'.
+* CAUTION: Do not change this setting without consulting Splunk Support.
+* Default: empty string
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+denyList = <comma-separated list>
+* The control metrics that the /services/metrics REST endpoint is not to list.
+* The configuration descriptions for 'allowList' also apply to 'denyList'.
+* 'denyList' takes precedence over 'allowList', meaning that a name that matches
+  both 'allowList' and 'denyList' will not be listed.
+* CAUTION: Do not change this setting without consulting Splunk Support.
+* Default: splunkd_bundle_replication_*,\
+           splunkd_early_repair_*,\
+           splunkd_smartbus_indexer_*,\
+           splunkd_smartbus_ingestor_*,\
+           splunkd_tcpin_connections_*,\
+           splunkd_kvstore_sync_*
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+enable_auth_metrics = <boolean>
+* Whether or not the authentication and authorization components  
+  generate metrics using the Prometheus logging toolkit.
+* A value of "true" means that Splunk software generates metrics from 
+  various internal authentication and authorization components.
+* A value of "false" means that Splunk software does not generate
+  metrics from various internal authentication and authorization components.
+* Default: true
 
 [watchdog]
 disabled = <boolean>
@@ -6454,18 +6627,137 @@ mvl-enabled = <boolean>
 * NOTE: Do not change this setting unless instructed to do so by Splunk Support.
 * Default: false
 
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+tenant = <string>
+* The Splunk Cloud Services (SCS) tenant that this Enterprise Cloud
+  instance should use for authentication and authorization into SCS.
+* This instance logs into this SCS tenant with the
+  'kvservice.principal.id' that you specify and the
+  'kvservice.principal.token' that you supply.
+* The tenant you provide must be a valid, active tenant that is
+  not tombstoned.
+* No default.
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+environment = <string>
+* The SCS cluster that this instance should use when logging into SCS.
+* It is possible to have multiple production clusters in SCS depending on region.
+  This instance will be mapped to the corresponding SCS region based on
+  what you specify here.
+* No default.
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+kvservice.auth.mode =  external | vault | bridge
+* Specifies the authentication mode that this Enterprise Cloud instance use.
+* vault     : Authenticates through EC-SCS Vault
+* bridge    : Authenticates through EC-SCS requests by retrieving an SCS token
+              directly from its public APIs.
+* external  : Use external authentication
+* Default : external
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+iac.url = <url>
+* The URL that this Enterprise Cloud instance should use to authenticate with and 
+  retrieve an SCS access token.
+* Required in bridge authentication mode with kvservice.principal.client.id and
+  kvservice.principal.client.secret.
+* No default.
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+iac.token.expiration = <integer>
+* Number of seconds in which SCS token expires after it is minted.
+* No default.
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+kvservice.principal.id = <string>
+* The ID of the principal that this Enterprise Cloud instance should use
+  to authenticate into the SCS tenant.
+* The principal you specify must be a valid, active member of the
+  tenant you provide with the 'tenant' setting, and that tenant
+  must be active and not tombstoned.
+* No default.
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+kvservice.principal.token = <string>
+* A valid token for the principal ID that this Enterprise Cloud instance should use
+  to authenticate into the SCS tenant.
+* The principal token that you provide must be valid for the principal
+  you provided with the 'kvservice.principal.id' setting.
+* No default.
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+kvservice.principal.client.id = <string>
+* The client ID of the service account that this Enterprise Cloud instance should use
+  to authenticate into the SCS tenant.
+* The principal you specify must be a valid, active member of the
+  tenant you provide with the 'tenant' setting, and that tenant
+  must be active and not tombstoned.
+* No default.
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+kvservice.principal.client.secret= <string>
+* The client secret of the service account that this Enterprise Cloud instance
+  should use
+  to authenticate into the SCS tenant.
+* The principal you specify must be a valid, active member of the
+  tenant you provide with the 'tenant' setting, and that tenant
+  must be active and not tombstoned.
+* Setting is encrypted on Splunk software startup.
+* No default.
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+kvservice.namespace = <string>
+* The internal service namespace that this Enterprise Cloud instance
+  should use when authenticating into the SCS tenant for the SCS
+  KV Store service.
+* NOTE: This is an internal setting. Do not modify it.
+* Default: kvstore
+
+kvservice.api.retry.limit = <positive integer>
+* The number of attempts to retry the external SCS KV service API
+  when it receives network-related errors, for example "service unavailable",
+  "too many requests", etc.
+* Default: 10
+
+kvservice.api.retry.initial_sleep_ms = <positive integer>
+* The amount of time, in milliseconds, to sleep before attempting
+  the first retry of the external SCS KV service API after it encounters
+  a network-related error.
+* The sleep time doubles in length until it exceeds
+  'kvservice.api.retry.maximum_sleep_ms' milliseconds.
+* Default: 100
+
+kvservice.api.retry.maximum_sleep_ms = <positive integer>
+* The maximum amount of time, in milliseconds, between API retries.
+* The process sleeps for 'kvservice.api.retry.initial_sleep_ms' milliseconds
+  before it retries initially. This time doubles after each retry, to a
+  maximum of 'kvservice.api.retry.maximum_sleep_ms' milliseconds.
+* Default: 10000
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+scs-kvstore-disabled = <boolean>
+* Whether or not this Enterprise Cloud instance has SCS KV Store enabled.
+* Default: true
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+scsTokenScriptPath = <string>
+* The path to the platform extension that retrieves SCS access tokens from
+  Hashicorp Vault.
+* Default: /usr/local/bin/get_scs_tokens.sh
+
 
 ############################################################################
 # Remote Storage of Search Artifacts Configuration
 ############################################################################
 [search_artifact_remote_storage]
 disabled = <boolean>
-* Currently not supported. This setting is related to a feature that is
-  still under development.
 * Optional.
 * Specifies whether or not search artifacts should be stored remotely.
 * Splunkd does not clean up artifacts from remote storage. Set up cleanup
   separately with the remote storage provider.
+* This can be enabled on search head clusters, but not standalone search heads.
+  The exception to this is in Splunk Cloud Services (SCS), where the
+  architecture requires this to be enabled on standalone search heads.
 * Default: true
 
 path = <path on server>
@@ -6487,8 +6779,34 @@ upload_archive_format = [none|tar.lz4]
   on the remote storage.
 * This can reduce time to upload and artifact when the remote storage has a high
   seek penalty and the search artifact contains more than 100 individual files
-* Default : none
+* On Splunk Cloud Platform, the "none" setting is only used for troubleshooting
+  and is not currently supported. However, this setting is supported on SCS.
+* Default : tar.lz4
+* Default for SCS: none
 
+upload_adhoc_searches = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still in development.
+* A value of "true" enables the upload of ad-hoc search artifacts to remote
+  storage.
+* Default: false
+
+allow_loadjob_list_from_remote_storage = <boolean>
+* THIS FLAG IS A TEMPORARY WORKAROUND FOR LOADJOB ON XRDR SEARCH HEADS DURING
+  FAILOVER SCENARIOS. THE FLAG AND ITS UNDERLYING LOGIC SHOULD BE REMOVED AFTER
+  THE JOB STATE OFFLOADING PROJECT (SPL-209151) ALLOWS US TO POPULUATE SCHEDULED
+  SEARCH HISTORIES BASED ON THE METADATA STORED IN OUR EXTERNAL DATABASE.
+* Specifies whether the "loadjob" search command runs a LIST operation on remote
+  storage to identify artifacts that match the
+  savedsearch="<user-string>:<app-string>:<search-name-string>" and
+  "artifact_offset" arguments.
+* This LIST operation only runs if there are not enough saved search history entries
+  returned by the GET saved/searches/{name} endpoint to serve the "loadjob" query.
+* A value of "true" means the "loadjob" command runs a LIST operation on remote
+  storage to identify matching artifacts.
+* A value of "false" means that the "loadjob" command does not run a LIST 
+  operation on remote storage to identify matching artifacts.
+* Default : false
 
 ############################################################################
 # S3 specific settings
@@ -6527,7 +6845,8 @@ remote.s3.list_objects_version = v1|v2
 * See AWS S3 documentation "GET Bucket (List Objects) Version 2" for details.
 * Default: v1
 
-remote.s3.signature_version = v2|v4
+remote.s3.signature_version = v4
+* The only valid value is 'v4'.
 * The signature version to use when authenticating with the remote storage
   system supporting the S3 API.
 * For 'sse-kms' server-side encryption scheme, you must use
@@ -6622,6 +6941,7 @@ remote.s3.max_count.max_retries_per_part = <unsigned integer>
   or upload.
 * Optional.
 * Default: 1
+* Default for SCS: 9
 
 remote.s3.max_count.max_retries_in_total = <unsigned integer>
 * When the remote.s3.retry_policy setting is max_count, sets the maximum number
@@ -6629,6 +6949,7 @@ remote.s3.max_count.max_retries_in_total = <unsigned integer>
 * The count is maintained for each file as a whole.
 * Optional.
 * Default: 1
+* Default for SCS: 128
 
 remote.s3.timeout.connect = <unsigned integer>
 * Set the connection timeout, in milliseconds, to use when interacting with
@@ -6715,11 +7036,9 @@ remote.s3.dhFile = <path>
 * Optional.
 * No default.
 
-remote.s3.encryption = sse-s3 | sse-kms | sse-c | none
+remote.s3.encryption = sse-c | none
 * Specifies the scheme to use for Server-side Encryption (SSE) for
   data-at-rest.
-* sse-s3: Check http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html
-* sse-kms: Check http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html
 * sse-c: Check http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html
 * none: no Server-side encryption enabled. Data is stored unencrypted on
   the remote storage.
@@ -6743,7 +7062,7 @@ remote.s3.encryption.sse-c.key_refresh_interval = <unsigned integer>
 * Default: 86400 (24 hours)
 
 remote.s3.kms.key_id = <string>
-* Required if remote.s3.encryption = sse-c | sse-kms
+* Required if remote.s3.encryption = sse-c
 * Specifies the identifier for Customer Master Key (CMK) on KMS. It can be the
   unique key ID or the Amazon Resource Name (ARN) of the CMK or the alias
   name or ARN of an alias that refers to the CMK.
@@ -6820,6 +7139,356 @@ pool_size = <positive integer>
   [s3_client_threads] stanza is set to "per_client".
 * NOTE: Do not change this setting unless instructed to do so by Splunk Support.
 
+############################################################################
+# Noah service
+############################################################################
+[noahService]
+
+uri = <uri>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* URI of the Noah server.
+* Default: none
+
+heartbeatPeriod = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Interval (in seconds) that the instance sends heartbeats to the Noah server.
+* This setting is used only during attempts at initial contact with the Noah
+  server. Once a heartbeat response is received from Noah, the
+  instance uses the value of "heartbeatAsPercentageOfLease" to calculate
+  the next heartbeat time.
+* If this setting is unset, the instance will not send a heartbeat to Noah.
+* Default: none
+
+heartbeatAsPercentageOfLease = <percentage>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Upon receiving a heartbeat response from the Noah server, the instance determines
+  when to send the next heartbeat based on this value and the response from the
+  Noah server.
+* Default: 25%
+
+tenant = <string>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The tenant name that this instance is associated with.
+* Default: none
+
+pass4SymmKey = <string>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Security key shared between search heads, search peers and the Noah server.
+* Unencrypted passwords cannot begin with "$1$" or "$7$". This string is reserved
+  for use by Splunk software to signify that the password is already encrypted.
+
+pass4SymmKey_minLength = <integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The minimum acceptable length, in characters, for the 'pass4SymmKey' value.
+* Default: 12
+
+usePeers = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* This setting controls whether the instance should ask the Noah server for a list of
+  search peers during the execution of a search.
+* Since search peers do not need to reach out to Noah, this setting is usually set to
+  false on the peers and true on the search head.
+* Default: true
+
+peersUpdateIntervalInSeconds = <unsigned integer>
+* This setting is currently not supported.
+* Time interval (in seconds) between polling the latest search peers 
+  from Noah server.
+* Set to "0" to stop the update interval.
+* This setting only applies when 'usePeers = true'.
+* Optional
+* Default: 10
+
+remoteBundle = <path>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The location of the path used for the search head to coordinate configuration
+  bundles with indexers.
+* Default: none
+
+cacheBucketTimeout = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long, in seconds, to cache a bucket map before requesting the latest one.
+* If set to 0, will always request the latest one.
+* Optional
+* Default: 1
+
+remoteConfigSyncRunsLimit = <unsigned integer>
+* The amount of time, in seconds, that elapses before the sync script restarts.
+* Default: 600
+
+remoteConfigSyncIoSchedulingClass = <unsigned integer>
+* Specifies the ionice scheduling class for the sync script.
+* For more information, search for "ionice" in the Linux manual pages.
+* Default: 2
+
+remoteConfigSyncIoSchedulingClassData = <unsigned integer>
+* Specifies the priority level of ionice scheduling class data for the sync
+  script.
+* For more information, search for "ionice" in the Linux manual pages.
+* Default: 7
+
+indexingReady = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* This setting controls whether the Noah indexer is ready to begin indexing.
+* Default: false
+
+waitForRemoteBundleInit = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* A value of "true" means that the first time you start Splunk, Splunk software
+  gates the S2S and HEC data ports and defers indexing until the remote bundle
+  has been initialized.
+* This setting has no effect on subsequent startups.
+* To use this setting, first specify the Noah bundle path in the 'remoteBundle'
+  setting.
+* A value of "false" means Splunk software does not gate these ports or defer
+  indexing.
+* Default: false
+
+enableIndexingBaseBackoffPeriod = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Base Interval (in seconds) that the indexer waits before
+  resuming heartbeats to enable indexing again as part of backing off
+  after indexing has been deactivated.
+* Default: 60
+
+enableIndexingLookbackForBackoffPeriod = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Interval (in seconds) that the indexer looks back for checking the number of
+  disable indexing occurences for calculating the period it needs to wait before
+  resuming heartbeats to enable indexing again.
+* Default: 3600
+
+enableIndexingMaxBackoffPeriod = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Maximum Interval (in seconds) that the indexer waits before
+  resuming heartbeats to enable indexing again as part of backing off
+  after disable indexing.
+* Default: 600
+
+reportIndexDeletion = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* This setting determines whether the Splunk instance should inform the
+  Noah Server that an index is deleted, upon detecting that an index has
+  been newly-deleted during a reload of the indexes.
+* Default: false
+
+latencyStampPeriod = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Interval (in seconds) that the indexer adds a latency timestamp to events
+  being ingested in order to monitor the ingesting latency.
+* Setting this to 0 disables timestamping for the data being ingested.
+* Default: 30
+
+timeToSearchLatencyPumpDataInterval = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Interval (in seconds) that data is pumped to mutex-protected storage
+  for the time-to-search latency metric.
+* Default: 5
+
+enableBatchRoll = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* This setting controls whether the Noah indexer should batch roll hot
+  buckets.
+* Default: false
+
+batchRollMaxBatchSize = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The maximum number of hot buckets to roll simultaneously.
+* Default: 100
+
+enableOperationsAPI = <boolean>
+* Do not change this setting. It is related to a feature
+  that is still under development.
+* Determines whether the Noah Operations API is enabled.
+* A value of true means the Noah Operations API is enabled.
+  A value of false means the API is disabled.
+* Default: true
+
+operationsPollingInterval = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The interval, in seconds, at which the Splunk instance polls peer
+  operations from the Noah server when using the Noah Operations API.
+* Default: 20
+
+enableRemoteBucketLocking = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* This setting controls whether remote bucket locking is activated while using
+  Noah.
+* Default: false
+
+[noahClient]
+
+retry_policy = max_count|none
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Sets the retry policy to use for requests to Noah.
+* The retry policy determines client behavior upon a failed request to the
+  Noah server:
+  * "max_count": Retry the request a maximum of 'max_count.max_retries_per_part'
+    times.
+  * "none": Do not retry the request.
+* Default: none
+
+max_count.max_retries_per_part = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Specifies the maximum number of times a failed request is retried when the
+  'retry_policy' setting is set to "max_count".
+* Default: 9
+
+backoff_strategy = constant | exponential
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The backoff strategy used when retrying getLatestBucketMap requests.
+* Optional
+* Default: none
+
+backoff_strategy.constant.delay = <interval><unit>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* When using the constant backoff strategy, how long to wait between
+  successive retries.
+* Optional
+* Default: none
+
+timeout.connect = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait to establish a connection with the server
+* Default: 12
+
+timeout.read = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait for the server to send a response
+* Default: 180
+
+timeout.write = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait for us to send a request to the server
+* Default: 60
+
+[noahClient:<operation>]
+
+retry_policy = max_count|none
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Sets the retry policy to use for getLatestBucketMap requests to Noah.
+* A retry policy specifies whether and how to retry failed GetLatestBucketMap
+  requests.
+* Retry policies:
+  + "max_count": Imposes a maximum number of times a request to Noah will be
+    retried upon intermittent failure.
+  + "none": Do not retry a failed request to Noah.
+* Default: none
+
+max_count.max_retries_per_part = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Specifies the maximum number of times a failed request is retried when the
+  'retry_policy' setting is set to "max_count".
+* The "add_hot_bucket" and "roll_bucket" operations will retry indefinitely,
+  regardless of this setting.
+* Default: 9
+
+max_count.max_retries_in_total = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Specifies the maximum value of "max_count.max_retries_per_part".
+* The "add_hot_bucket" and "roll_bucket" operations will retry indefinitely,
+  regardless of this setting.
+* Default: 128
+
+backoff_strategy = constant | exponential
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The backoff strategy used when retrying getLatestBucketMap requests.
+* Optional
+* Default: none
+
+backoff_strategy.constant.delay = <interval><unit>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* When using the constant backoff strategy, how long to wait between
+  successive retries.
+* Optional
+* Default: none
+
+timeout.connect = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait to establish a connection with the server
+* Default: 12
+
+timeout.read = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait for the server to send a response
+* Default: 180
+
+timeout.write = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait for us to send a request to the server
+* Default: 60
+
+[heartbeatService:<type>]
+* <type> can either be "noah" or "rendezvous".
+
+timeout.connect = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait to establish a connection with the server.
+* Default: 5
+
+timeout.read = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait for the server to send a response.
+* Default: 5
+
+timeout.write = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* How long to wait for us to send a request to the server.
+* Default: 5
+
+schedPolicy = other | fifo
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The thread scheduling policy that the server uses to spawn the heartbeat thread.
+* Default: other
+
+schedPriority = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The thread priority that the server uses to spawn the heartbeat thread.
+* The acceptable range of values is from 0 to 99.
+* NOTE: This setting is only used if 'schedPolicy' has a value of "fifo".
+* Default: none
+
 
 [hot_bucket_streaming]
 
@@ -6878,6 +7547,200 @@ slices_upload_retry_pending = <unsigned integer>
 * Must not be greater than 500
 * Default: 100
 
+[noah_operations_executor]
+executor_bucket_workers = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Number of workers that do bucket operations such as freezing and downloading buckets.
+* Must be greater than 0.
+* Default: 4
+
+executor_index_bootstrap_workers = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Number of workers that do list operations to discover buckets during
+  index bootstrapping.
+* Must be greater than 0.
+* Default: 10
+
+[noah_settings]
+use_bucket_diff = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Flag that controls whether to ask for a diff between an existing bucket map,
+  or all buckets.
+* Default: true
+
+skip_bucket_reload_period = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Interval (in seconds) that the instance waits before triggering a reload of
+  skipped buckets.
+* If set to 0, never automatically triggers a reload.
+* Default: 300
+
+list_frozen_bucket_period = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Interval (in seconds) that the instance waits before triggering a list of
+  frozen buckets from Noah server.
+* If set to 0, never automatically triggers a list.
+* Default: 480
+
+list_frozen_bucket_lookback_secs = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The look-back interval (in seconds) that the Noah server uses when compiling
+  a list of frozen buckets. For example, when set to the default of 720, the Noah
+  server lists the buckets frozen during the last 720 seconds.
+* Default: 720
+
+executor_early_repair_workers = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Number of workers that are used to run early repair jobs on hot buckets.
+* Default: 100
+
+executor_early_repair_capacity = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Maximum number of early repair jobs that the executor can hold.
+* Default: 500
+
+executor_noah_indexer_client_workers = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Number of workers that do bucket operations in noah indexer client.
+* Must be greater than 0.
+* Default: 4
+
+range_cache_warm_summary = <number><unit>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The instance only downloads summary buckets where ((current time) minus (earliest bucket timestamp)) is less
+  than the value of this setting. So, for example, if set to 3h, the instance only downloads summary buckets whose
+  earliest timestamp is within three hours of the current time.
+* Examples: 30m, 24h
+* Default: 7d
+
+cleanup_slices_for_warm_bucket_bootstrap = <bool>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Cleanup corresponding slices when bootstrapping warm buckets.
+* Default false
+
+executor_bootstrap_slice_cleanup_workers = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Number of workers that are used to run slice cleanup jobs when bootstrapping warm buckets.
+* Default: 10
+
+executor_bootstrap_slice_cleanup_capacity = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Maximum number of slice cleanup jobs that the executor can hold.
+* A value of 0 means no limit
+* Default: 0
+
+[noah_indexer_client]
+clustered_bucket_database_granularity = global | index
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Specifies the level at which Splunk software creates search
+  manifest files on search peers in an indexer cluster.
+* Search manifest files list primary buckets for the search peer.
+  This is not the same as .bucketManifest files, which list all buckets that
+  reside on the host per index.
+* A value of "global" means Splunk software creates a single search 
+  manifest file that spans all indexes on the search peer.
+* A value of "index" means Splunk software creates a search manifest file
+  per index.
+* This setting is dynamically reloadable and does not require a restart of the
+  Splunk instance.
+* NOTE: Do not change this setting unless instructed to do so by Splunk Support.
+* Default: global
+
+[bootstrap_diff_buckets]
+bootstrap_diff_lookback_window = <unsigned integer>
+* Do not change this setting unless instructed to do so by Splunk Support.
+* Length of lookback window for bootstrap diff to look for buckets to bootstrap
+* in seconds.
+* Default: 172800
+
+report_diff_bucket_batch_size = <unsigned integer>
+* Do not change this setting unless instructed to do so by Splunk Support.
+* Sets the bucket batch size during reporting for bootstrap differential jobs. 
+  For example, if the batch size is 100 and there are 1000 buckets that must be 
+  reported by a bootstrap differential job, the job reports 10 times, each time 
+  reporting 100 buckets. 
+* Default: 100
+
+[disaster_recovery_settings]
+enabled = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Controls whether cross-region disaster recovery is enabled.
+* Default: false
+
+replication_enabled = <boolean>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Controls whether objects uploaded to active remote storage are then 
+  replicated to a secondary remote storage.
+* Default: false
+
+replication_max_wait_time_secs = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Interval (in seconds) that the instance waits for an object to be replicated
+  before considering the replication to be a failure.
+* If set to 0, waits indefinitely for the object to be replicated.
+* Default: 900
+
+replication_min_check_time_secs = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Minimum interval (in seconds) that the instance waits before checking if an object has been
+  replicated after the initial replication check.
+* Default: 10
+
+replication_max_check_time_secs = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Maximum interval (in seconds) that the instance waits before checking if an object has been
+  replicated after the initial replication check.
+* Default: 60
+
+replication_check_deletes = <bool>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Controls whether the instance waits for the replication of certain delete markers
+  before proceeding to delete remaining files during the freeze process.
+* Default: true
+
+executor_smartbus_bootstrap_workers = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Number of workers that do head operations to retrieve metadata of an ingestion blob
+  during smartbus bootstrapping.
+* Must be greater than 0.
+* Default: 10
+
+executor_smartbus_bootstrap_capacity = <unsigned integer>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Maximum number of queued ingestion blob bootstrap jobs to be processed. This affects
+  the same threadpool that uses the 'executor_smartbus_bootstrap_workers' setting.
+* A value of 0 means that the queue capacity is unlimited.
+* Default: 1000
+
+executor_smartbus_bootstrap_timeout = <positive number>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* The timeout, in seconds, to wait to enqueue if the queue is full. This affects
+  the same threadpool that uses the 'executor_smartbus_bootstrap_capacity' setting.
+* A value of 0 means we block indefinitely and don't exit early if the queue is full
+* Default: 10
 
 [federated_search]
 # This section contains settings for the data federation feature.
@@ -6930,6 +7793,34 @@ syncProxyBundleToClusterMembers = <boolean>
   Support.
 * Default: true
 
+[distributed_tracer]
+enabled = <boolean>
+* Controls whether distributed search tracing is enabled.
+* When 'enabled=true', the Splunk software traces distributed searches and
+  sends the search tracing data to the default external tracing agent port in
+  regular intervals (every 5 seconds).
+* Set 'enabled=false' if tracing is not required.
+* Default: false
+
+reportInterval = <positive integer>
+* This setting determines how often, in seconds, the distributed search tracer
+  flushes search process tracing data from the in-memory trace buffer and sends
+  it to an external trace agent.
+* For example, the default of 5 means that the distributed search tracer sends
+  tracing data reports to the external trace agent on a 5 second interval.
+* If set to 0 or negative integer, the distributed search tracer uses the
+  default 'reportInterval' of 5 (seconds).
+* Default: 5
+
+traceAgentHostPort = <string>
+* The distributed search tracer sends trace data reports to an external trace
+  agent. By default, the trace agent listens on local UDP port 6831.
+* Set this setting only if the trace agent is listening on a different host or
+  port.
+* For <string> specify the trace agent host and port using the following
+  format: <host>:<port_number>
+  * The <host> value can be a host name or an IP address.
+* Default: 127.0.0.1:6831
 
 [distributed_leases]
 sslVerifyServerCert = <boolean>
@@ -6959,14 +7850,26 @@ provider = [AWS|KVstore]
 * Do not change this setting value without consulting Splunk Support.
 * Default: AWS
 
+sslRootCAPath = <path>
+* See the description of 'sslVerifyServerCert' under the [sslConfig] stanza
+  for details on this setting.
+* Default: The value for 'sslRootCAPath' under the [sslConfig] stanza.
+
+tenant = <string>
+* The cloud stack id of current tenant of the stack.
 
 [search_state]
-alert_store = local
+alert_store = local | awsdynamodb
 * Specifies location of alert state store
 * Default: local
 
+alert_store.awsdynamodb.alert_fetch_interval = <integer>
+* The interval, in seconds, that the triggered alerts will be
+  fetched asynchronously from the remote store.
+* Only applies when alert_store is set to awsdynamodb.
+* Default: 60
 
-suppression_store = local
+suppression_store = local | awsdynamodb
 * Specifies location of suppression state store
 * Default: local
 
@@ -6980,7 +7883,100 @@ job_state_store = local|kvstore
   Support or product guidance for the rollout.
 * Default: local
 
+suppression_store.awsdynamodb.suppression_writer_threads = <integer>
+* Number of threads to use to write suppression keys to the
+  remote store.
+* This number is capped at 100.
+* Only applies when suppression_store is set to awsdynamodb.
+* Default: 4
 
+suppression_store.awsdynamodb.suppression_queue_size = <integer>
+* The maximum number of batches of suppression keys that can be
+  enqueued while waiting to be written to the remote store.
+  The batch size can be up to 25 suppression keys.
+* Set to 0 for infinite size.
+* Only applies when suppression_store is set to awsdynamodb.
+* Default: 25000
+
+tenant = <string>
+* The cloud stack id of current tenant of the stack.
+
+sslVerifyServerCert = <boolean>
+* See the description of 'sslVerifyServerCert' under the [sslConfig] stanza
+  for details on this setting.
+* Default: false
+
+sslVerifyServerName = <boolean>
+* See the description of 'sslVerifyServerName' under the [sslConfig] stanza
+  for details on this setting.
+* Default: false
+
+sslRootCAPath = <path>
+* See the description of 'sslRootCAPath' under the [sslConfig] stanza
+  for details on this setting.
+* Default: The value for 'sslRootCAPath' under the [sslConfig] stanza.
+
+[structured_data_service]
+server.workgroup = <string>
+* Required for Federated Search for Amazon S3 searches.
+* Specifies the name of the Amazon Athena workgroup that this Splunk Cloud
+  Platform deployment uses for Federated Search for Amazon S3.
+* No default
+
+server.acs_api.environment = prod|staging
+* Sets the environment for API requests to the Admin Config Service.
+* NOTE: Do not change this setting without consulting with Splunk Support.
+* Default: prod
+
+server.acs_api.version = <string>
+* Sets the version for the API requests to Admin Config Service.
+* NOTE: Do not change this setting without consulting with Splunk Support.
+* Default: v2
+
+server.query_results_path = <string>
+* Required. Specifies the location for storage of query results.
+* No default
+
+server.sslVerifyServerCert = <boolean>
+* See the description of 'sslVerifyServerCert' under the [sslConfig] stanza
+  for details on this setting.
+* Default: false
+
+server.sslVerifyServerName = <boolean>
+* See the description of 'sslVerifyServerName' under the [sslConfig] stanza
+  for details on this setting.
+* Default: false
+
+server.sslRootCAPath = <path>
+* See the description of 'sslRootCAPath' under the [sslConfig] stanza
+  for details on this setting.
+* Default: The value for 'sslRootCAPath' under the [sslConfig] stanza.
+
+aws_region = <string>
+* Specifies an Amazon Web Services (AWS) region.
+* The Splunk software fetches this value from the Amazon EC2 stack for your 
+  Splunk Cloud Platform deployment and updates this setting. You do not need 
+  to set it.
+* Along with 'aws_account_id', this setting enables your Splunk Cloud Platform 
+  deployment to connect to an Amazon S3 data source indicated in a Federated 
+  Search for Amazon S3 search.
+* No default.
+
+server.managed_glue_logsources = <comma separated list>
+* For use with Federated Search for Amazon S3.
+* Lists the log source types that this Splunk Cloud Platform deployment 
+  supports for the creation of Splunk-managed AWS Glue table datasets. 
+* NOTE: Change this setting from its default only when instructed to do so by 
+  Splunk Support.
+* Default: cloudtrail, vpcflow
+
+server.managed_glue_dbname = <string>
+* For use with Federated Search for Amazon S3.
+* Specifies the name of the AWS Glue database used by the Splunk-managed AWS 
+  Glue tables that Splunk software creates for this Splunk Cloud Platform 
+  deployment.
+* NOTE: Change this setting only when instructed to do so by Splunk Support.
+* No default
 
 
 [manager_pages]
@@ -7005,13 +8001,13 @@ disabled = <boolean>
 * Default: false
 
 enable_splunk_spotlight = <boolean>
-* Whether or not to start the Splunk spotlight Open Telemetry (OTel) collector
-  to collect metrics from packages.
-* A value of "true" means the Splunk spotlight OTel collector is turned
-  on and collects metrics from packages.
-* A value of "false" means the Splunk spotlight OTel collector is turned off
-  and packages metrics are not collected.
-* Default: true
+* Whether to start the Splunk spotlight Open Telemetry (OTel) collector to collect metrics
+  from packages or collect those metrics with the supervisor.
+* A value of "true" means the Splunk spotlight OTel collector starts and collects 
+  metrics from packages and the supervisor does not collect any metrics.
+* A value of "false" means the Splunk spotlight OTel collector is turned off, and
+  the supervisor collects package metrics.
+* Default: false
 
 enable_supervisor_admin_api = <boolean>
 * Whether or not the supervisor enables the admin API endpoints,
@@ -7138,6 +8134,37 @@ run_as_owner_enabled = <boolean>
 * A value of "false" means run-as-owner searches are not allowed.
 * Default: false
 
+[PKI]
+issuingCAUri = <string>
+* The Uniform Resource Identifier (URI) of the Certificate Authority. 
+* This URI contains two parts. 
+  * The first part, the host and port, points to a proxy.
+  * The second part, the path, points to the REST endpoint of
+    the Certificate Authority that operates in the corresponding environment 
+    for signing certificates.
+* No default.
+
+connectionTimeout = <timespan>
+* The timeout for connecting to the certificate authority to initiate a
+  certificate signing request (CSR) transaction.
+* You can specify the timeout as either a number or a string (for
+  example: "5", "5s", or "5sec" for 5 seconds; "15s", "1m" for
+  1 minute, etc.)
+* Default: 5s
+
+readTimeout = <timespan>
+* The timeout when reading data from an external service during a transaction.
+* You can specify the timeout as either a number or a string (for
+  example: "5", "5s", or "5sec" for 5 seconds; "15s", "1m" for
+  1 minute, etc.)
+* Default: 5s
+
+writeTimeout = <timespan>
+* The timeout for sending data to an external service during a transaction.
+* You can specify the timeout as either a number or a string (for
+  example: "5", "5s", or "5sec" for 5 seconds; "15s", "1m" for
+  1 minute, etc.)
+* Default: 5s
 
 ############################################################################
 # Version Control configuration
@@ -7184,7 +8211,7 @@ interval = <interval><unit>
 [postgres]
 disabled = <boolean>
 * Determines whether or not PostgresSQL is disabled.
-* Default: false
+* Default: true
 
 enable_clustered_mode = <boolean>
 REMOVED. This setting has been removed and has no effect. 
@@ -7226,7 +8253,7 @@ disabled = <boolean>
 * Whether or not the cluster state server is turned off.
 * A value of "true" means the state server is turned off.
 * A value of "false" means the state server is turned on.
-* Default: false
+* Default: true
 
 http_port = <integer>
 * The TCP/IP network port that the cluster state server helper

@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 ############################################################################
 # OVERVIEW
@@ -55,6 +55,7 @@ clientName = deploymentClient
 * This setting takes precedence over DNS names.
 * You can use 'clientName' to filter with, or independently from 
   the client IP or DNS name.
+* It can contain only letters, numbers, underscores, dots, dashes, and colons.
 * Default: deploymentClient
 
 workingDir = $SPLUNK_HOME/var/run
@@ -96,6 +97,17 @@ endpoint=$deploymentServerUri$/services/streams/deployment?name=$serverClassName
   'target-broker'stanza.
 * $serverClassName$ and $appName$ name the server class and the app,
   respectively.
+
+ds_proxy = [disabled|enabled]
+* Controls whether this deployment client exposes the /proxy/deployment REST
+  endpoint for proxying requests to its configured deployment server.
+* A value of "enabled" means the deployment client exposes the endpoint.
+* A value of "disabled" means the deployment client does not expose the
+  endpoint.
+* Activate the proxy endpoint only when it is required.
+* You must restart the Splunk platform for changes to this setting to
+  take effect.
+* Default: disabled
 
 serverEndpointPolicy = [acceptAlways|rejectAlways]
 

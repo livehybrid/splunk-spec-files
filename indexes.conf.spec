@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 ############################################################################
 # OVERVIEW
@@ -456,6 +456,8 @@ deleted = true
 * If present, means that this index has been marked for deletion: if splunkd
   is running, deletion is in progress; if splunkd is stopped, deletion
   re-commences on startup.
+* On a Noah instance, the presence of this setting only indicates that the
+  index is marked as deleted.
 * Do NOT manually set, clear, or modify the value of this setting.
 * CAUTION: Seriously: LEAVE THIS SETTING ALONE.
 * No default.
@@ -956,6 +958,7 @@ maxDataSize = <positive integer>|auto|auto_high_volume
 * For remote storage enabled indexes, consider setting this value to "auto"
   (750MB) or lower.
 * Default: "auto" (sets the size to 750 megabytes)
+  If storage_tier=flex, "auto" sets the size to 50 megabytes.
 
 rawFileSizeBytes = <positive integer>
 * Deprecated in version 4.2 and later. Splunkd ignores this value.
@@ -1537,6 +1540,17 @@ hotBucketStreaming.deleteHotsAfterRestart = <boolean>
   still under development.
 * Default: false
 
+storage_tier = <normal|flex>
+* Currently not supported. This setting is related to a feature that is
+  still under development.
+* Determines which storage tier the index data is stored in.
+* If set to normal, data will be saved in the standard index format, 
+  which is optimized for search speed.
+* If set to "flex", the index will be optimized for infrequently
+  accessed data. Storage costs will be lower, but searches will be
+  slower and some features won't be available.
+* Optional.
+* Default: normal
 
 #**************************************************************************
 # PER PROVIDER FAMILY OPTIONS
@@ -2116,6 +2130,93 @@ splitter.file.split.maxsize = <integer>
 * Maximum size, in bytes, for file splits.
 * Default: Long.MAX_VALUE
 
+#**************************************************************************
+# Dynamic Data Self Storage settings.
+# This section describes settings that affect the archiver-
+# optional and archiver-mandatory settings only.
+#
+# As the first step in the Dynamic Data Self Storage feature, it allows users
+# to move their data from Splunk indexes to customer-owned external storage
+# in AWS S3 when the data reaches the end of the retention period. Note that
+# only the raw data and delete marker files are transferred to the external
+# storage.
+#
+# Future development may include the support for storage hierarchies and the
+# automation of data rehydration.
+#
+# For example, use the following settings to configure Dynamic Data Self Storage.
+#   archiver.selfStorageProvider     = S3
+#   archiver.selfStorageBucket       = mybucket
+#   archiver.selfStorageBucketFolder = folderXYZ
+#**************************************************************************
+archiver.selfStorageProvider = <string>
+* Specifies the storage provider for Self Storage.
+* Optional. Only required when using Self Storage.
+* Self Storage only supports the Simple Storage Service (S3) and Google Cloud Storage (GCS)
+  for Amazon Web Services (AWS) and Google Cloud Platform (GCP), respectively.
+* NOTE: This setting value is case-sensitive.
+
+archiver.selfStorageBucket = <string>
+* Specifies the destination bucket for Self Storage.
+* Optional. Only required when using Self Storage.
+
+archiver.selfStorageBucketFolder = <string>
+* Specifies the folder on the destination bucket for Self Storage.
+* Optional.
+* If not specified, data is uploaded to the root path in the destination bucket.
+
+archiver.selfStorageDisableMPU = <boolean>
+* A value of "true" disables uploading in multiple chunks. Files are uploaded to
+  the destination bucket as a single (large) chunk.
+* Optional.
+* Default: false
+
+archiver.selfStorageEncryption = sse-s3 | none
+* Specifies the scheme to use for server-side encryption for Self Storage.
+* A value of sse-s3 enables SSE-S3 server-side encryption mode on Amazon S3 for
+  Self Storage.
+* A value of 'none' disables server-side encryption. Data is stored unencrypted
+  on the Self Storage.
+* Optional.
+* Default: sse-s3
+
+#**************************************************************************
+# Dynamic Data Archive lets you move your data from your Splunk Cloud indexes to a
+# storage location. You can configure Splunk Cloud to automatically move the data
+# in an index when the data reaches the end of the Splunk Cloud retention period
+# you configure. In addition, you can restore your data to Splunk Cloud if you need
+# to perform some analysis on the data.
+# For each index, you can use Dynamic Data Self Storage or Dynamic Data Archive,
+# but not both.
+#
+# For example, use the following settings to configure Dynamic Data Archive.
+#   archiver.coldStorageProvider        = Glacier
+#   archiver.coldStorageRetentionPeriod = 365
+#**************************************************************************
+archiver.coldStorageProvider = <string>
+* Specifies the storage provider for Dynamic Data Archive.
+* Optional. Only required when using Dynamic Data Archive.
+* The only providers currently supported are Glacier and GCSArchive for
+  Amazon Web Services (AWS) and Google Cloud Platform (GCP), respectively.
+* NOTE: This setting value is case-sensitive.
+
+archiver.coldStorageRetentionPeriod = <unsigned integer>
+* Defines how long Splunk will maintain data in days, including the
+  archived period.
+* Optional. Only required when using Dynamic Data Archive.
+* Must be greater than 0
+
+archiver.enableDataArchive = <boolean>
+* If set to true, Dynamic Data Archiver is enabled for the index.
+* Default: false
+
+archiver.maxDataArchiveRetentionPeriod = <nonnegative integer>
+* The maximum total time in seconds, that data for the specified index is
+  maintained by Splunk, including the archived period.
+* The archiver.maxDataArchiveRetentionPeriod controls the maximum value of the
+  coldStorageRetentionPeriod. coldStorageRetentionPeriod cannot exceed this
+  value.
+* Default: 0
 
 #**************************************************************************
 # Volume settings.  This section describes settings that affect the volume-
@@ -2646,7 +2747,7 @@ remote.s3.max_batchremove_batch_size = <unsigned integer>
 * Setting this value to 0 or 1 disables the batch removal feature.
 * The highest permissible value is 1000. If set to a value greater than 1000,
   it will default to 1000.
-* Default: 1
+* Default: 1000
 
 remote.s3.max_download_batch_size = <unsigned integer>
 * The maximum number of objects that can be downloaded in a single batch
@@ -2713,6 +2814,177 @@ federated.dataset = <string>
 * If <prefix> is not defined, <prefix> defaults to 'index'.
 * No default
 
+federated.filter = <string> 
+* Set only when the following things are true for the federated index:
+  * The 'federated.provider' has a 'type' of "aws_s3" or "aws_lake"
+    in federated.conf.
+  * The 'federated.dataset' has a <prefix> of "aws_glue_table".
+* Specifies an extra filter for all 'sdselect' searches referencing the 
+  federated index.
+* When you run 'sdselect' searches against the AWS Glue table that the 
+  federated index is associated with, Splunk software automatically inserts 
+  this filter into the WHERE clause of the search.
+* The <string> can be a simple "<field> = <value>" filter, but it can also use 
+  any other input supported by a WHERE clause in an 'sdselect' search, such as  
+  'eval' expressions and Boolean operations. 
+* Optional.
+* No default.
+
+federated.timefield = <string>
+* Optional.
+* Set only when the following things are true for the federated index:
+  * The 'federated.provider' has a 'type' of "aws_s3" or "aws_lake" in 
+    federated.conf.
+  * The 'federated.dataset' has a <prefix> of "aws_glue_table".
+* Specifies the name of a time-related field in your remote data that works
+  like '_time' fields in the Splunk search processing language.
+* Provide a 'federated.timefield' to search your remote data with time-related
+  functions.
+  * If you do not provide a 'federated.timefield' to search remote data in 
+    non-Splunk platform federated providers such as AWS S3 providers, Splunk 
+    platform functions that require a _time field might return incorrect 
+    results, and searches of this federated index ignore the time picker.
+* Note: In certain cases, Splunk search processing language requires time 
+  fields to have UNIX time format. In these cases, if your remote 
+  'federated.timefield' is not currently in UNIX time format, you can use the 
+  value of 'federated.unixtimefield' in the search. The 
+  'federated.unixtimefield' acts as an alias for 'federated.timefield' that  
+  also converts the value of 'federated.timefield' to UNIX time format at 
+  search time. See the entry on 'federated.unixtimefield' for information and 
+  examples. 
+* No default.
+
+federated.timeformat = <time format string>
+* Optional.
+* Set only when the following things are true for the federated index:
+  * The 'federated.provider' has a 'type' of "aws_s3" or "aws_lake" in 
+    federated.conf.
+  * The 'federated.dataset' has a <prefix> of "aws_glue_table".
+* Specifies the time format string for the 'federated.timefield' setting.
+  * If 'federated.timefield' is set for the federated index,
+    'federated.timeformat' must also be set for the federated index.
+* The time format string must be in Splunk strptime() format.
+* No default.
+
+federated.unixtimefield = <string>
+* Optional.
+* Set only when the following things are true for the federated index:
+  * The 'federated.provider' has a 'type' of "aws_s3" or "aws_lake"
+    in federated.conf.
+  * The 'federated.dataset' has a <prefix> of "aws_glue_table".
+* Specifies a field alias of 'federated.timefield' that additionally converts 
+  the values of 'federated.timefield' into UNIX time format at search time.
+* The 'federated.timefield' for a federated index cannot be the same as the 
+  'federated.unixtimefield' for that federated index.
+* Use the 'federated.unixtimefield' in searches of the federated index where
+  UNIX time format time fields are required, or where you want to see your 
+  time field in UNIX time format in the search results.
+  * For example, WHERE clauses do not support binary data types. If you have 
+    'federated.timefield=mytime', 'federated.timeformat=%ST', and
+    'federated.unixtimefield=_time', the following search converts 'mytime' 
+    values into UNIX time format values under the '_time' alias.
+
+      | sdselect count from myindex WHERE _time > 1234567890
+
+* Default: _time.
+
+federated.partition.time.fields = <comma-delimited list of strings>
+* Optional.
+* Specifies a comma-delimited list of time-related fields in your remote data.
+  These fields govern the partitions by which remote data is organized in
+  non-Splunk platform federated providers (such as Amazon S3 federated
+  providers).
+* Use this setting in conjunction with 'federated.partition.time.formats' and
+  'federated.partition.time.types' to identify the hierarchical structure of
+  the data partitions in your remote data.
+  * When you identify the partitions into which your data is organized,
+    searches of this federated index can use the time ranges you set in SPL or
+    with the time picker to filter out unwanted partitions.
+  * Field names containing comma characters must be surrounded by double
+    quote characters to prevent the Splunk software from breaking such field
+    names into multiple values.
+* NOTE: If you set 'federated.partition.time.fields' for a federated index
+  definition, you must also set 'federated.partition.time.formats' and
+  'federated.partition.time.types' with lists of time format strings and time
+  field types that correspond to the fields in the
+  'federated.partition.time.fields' list. In other words, all three lists must
+  have the same number of values.
+* Do not set 'federated.partition.time.fields' when either of the
+  following are true for this federated index definition:
+  * The selected 'federated.provider' has a definition in federated.conf with a
+    'type' of "Splunk".
+  * The 'federated.dataset' has a <prefix> of "aws_s3_path".
+* No default.
+
+federated.partition.time.formats = <comma-delimited list of strings>
+* Required only if 'federated.partition.time.fields' is set. Do not set
+  otherwise.
+* Specifies a comma-delimited list of time format strings.
+  * All time format strings must be composed of Splunk-supported strptime()
+    time format variables. The '%w' and '%JT' time format variables are not
+    allowed.
+* The 'federated.partition.time.formats' list must include a corresponding time
+  format string for each field listed by the 'federated.partition.time.fields'
+  setting.
+  * For example, if 'federated.partition.time.fields' is set to "year,month"
+    you might set 'federated.partition.time.formats' to "%Y,%m".
+* If the 'federated.partition.time.types' field is a timestamp, the 
+  corresponding 'federated.partition.time.formats' value must be '%ST' and only 
+  one field can be specified for 'federated.partition.time.fields'.
+* Time format strings containing comma characters must be surrounded by
+  double-quote characters to prevent Splunk software from incorrectly breaking
+  such time format strings into multiple values.
+  * For example, 'federated.partition.time.formats="%Y,%m,%d",%H' is understood
+    by Splunk software to list two distinct time format strings: "%Y,%m,%d" and
+    "%H". But 'federated.partition.time.formats=%Y,%m,%d,%H' is understood by
+    Splunk software to list four distinct time format strings.
+* Do not set 'federated.partition.time.formats' when any of the following
+  are true for the federated index definition:
+  * The 'federated.partition.time.fields' setting is not set.
+  * The 'federated.provider' has a definition in federated.conf with a 'type' of "Splunk".
+  * The 'federated.dataset' has a <prefix> of "aws_s3_path".
+* No default.
+
+federated.partition.time.types = <comma-delimited list of strings>
+* Required only if 'federated.partition.time.fields' is set. Do not set
+  otherwise.
+* Specifies a comma-delimited list of time field type strings.
+  * The supported time field types are string, integer, date, and timestamp.
+  * The 'timestamp' type is currently supported only if the 
+    'federated.provider' has a 'type' of "aws_lake". 
+  * When 'timestamp' is specified for 'federation.partition.time.types', 
+    'federated.partition.time.fields' can have only one field.
+* The 'federated.partition.time.types' list must include a corresponding time
+  field type string for each field listed by the
+  'federated.partition.time.fields' setting.
+  * For example, if 'federated.partition.time.fields' is set to
+    "year,month,date", you might set 'federated.partition.time.types' to
+    "integer,string,string".
+* Do not set 'federated.partition.time.types' when any of the following
+  are true for the federated index definition:
+  * The 'federated.partition.time.fields' setting is not set.
+  * The 'federated.provider' selected for the federated index has a definition
+    in federated.conf with a 'type' of "Splunk".
+  * The 'federated.dataset' has a <prefix> of "aws_s3_path".
+* No default.
+
+federated.partition.time.tz = <timezone>
+* Required only if 'federated.partition.time.fields' is set. Do not set
+  otherwise.
+* Specifies the timezone to use for the timestamp populated by the
+  'federated.partition.time.fields', 'federated.partition.time.formats' and
+  'federated.partition.time.types' settings.
+* If this setting is not set, Splunk software uses the per-user timezone, as
+  declared in user-prefs.conf with the 'tz' setting.
+* Use only canonical timezone names such as America/Los_Angeles. For best
+  results use the Splunk UI.
+* Do not set 'federated.partition.time.tz' when any of the following
+  are true for the federated index definition:
+  * The 'federated.partition.time.fields' setting is not set.
+  * The 'federated.provider' selected for the federated index has a definition
+    in federated.conf with a 'type' of "Splunk".
+  * The 'federated.dataset' has a <prefix> of "aws_s3_path".
+* No default.
 
 ################################################################
 ##### Google Cloud Storage settings

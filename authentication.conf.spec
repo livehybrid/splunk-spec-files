@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 # This file contains possible settings and values for configuring
 # authentication via authentication.conf.
@@ -32,6 +32,45 @@ authType = [Splunk|LDAP|Scripted|SAML|ProxySSO]
 * Supported values: Splunk, LDAP, Scripted, SAML, ProxySSO.
 * Default: Splunk
 
+
+authVersion  = <string>
+* The version of the authentication.conf format.
+* Supported values are "v1" and "v2"
+* You must configure this setting if you want the instance to be able
+  to authenticate using multiple identity providers (IdPs).
+* To enable multiple-IdP authentication, set to "v2".
+* No default.
+
+authDomains  = <comma-separated list>
+* A list of authentication system domain configurations.
+* The auth system uses these domains to authenticate into more than one IdP.
+* You must configure a [domain] stanza with the appropriate settings and values
+  for each value that you specify here.
+* Valid only when 'authVersion' is set to "v2"
+* Required.
+* No default.
+
+disabledDomains  = <comma-separated list>
+* A comma-separated list of disabled domains.
+* Disabled domains are not used for authentication.
+* Use this setting to list domains that are currently not active but whose
+  configuration you want to preserve for later use.
+* Valid only when 'authVersion' is set to "v2"
+* This setting is optional.
+* No default.
+
+defaultDomain  = <string>
+* Default domain from the list of domains that you specified in 'authDomains'
+* Valid only when 'authVersion' is set to "v2"
+* When you specify a single domain for authentication, also set this value with
+  the name of the domain.
+* When you specify multiple domains for authentication, identify a default
+  domain and set this value.
+* Splunk platform uses default domain for authentication when either a single
+  domain is set or multiple domains are set and username does not match
+  any regex entry in domain pinning map.
+* Required.
+* No default.
 
 authSettings = <authSettings-key>,<authSettings-key>,...
 * Key to look up the specific configurations of chosen authentication
@@ -71,6 +110,18 @@ passwordHashAlgorithm = [SHA512-crypt|SHA256-crypt|SHA512-crypt-<num_rounds>|SHA
   previous hashing algorithm.
 * Default: SHA512-crypt
 
+allowSamlUserDeletion = <boolean>
+* Whether or not you can delete Security Assertion Markup Language (SAML)
+  users through the '/users' REST API and corresponding user
+  interface actions.
+* This is a global setting that applies to all SAML identity providers
+  configured on the instance.
+* Both the Splunk daemon and Splunk Web respect this setting for SAML user deletion.
+* A value of "true" means the Splunk platform can delete SAML users, 
+  provided you have the 'edit_user' and 'delete_saml_user' Splunk capabilities.
+* A value of "false" means the Splunk platform cannot delete SAML users.
+* Default: true
+
 
 defaultRoleIfMissing = <splunk role>
 * Applicable for LDAP authType. If the LDAP server does not return any groups, or if
@@ -99,6 +150,29 @@ scimSupportedDomains = <comma-separated list>
 * Do not modify this setting.
 * Default: *.okta.com, *.oktapreview.com, *.okta-emea.com
 
+[domainPinningMap]
+* The mapping of username regular expressions (regexes) to a domain name from
+  the list of 'authDomains'.
+* Follow this stanza name with several Domain-to-Regex(es) mappings as defined
+  in the following setting/value pattern.
+* Valid only when 'authVersion' is set to "v2"
+* This setting is optional.
+
+<domain name> = <semicolon separated list>
+* A semicolon-separated list of username regexes to map to an authentication domain.
+* List several of these setting/value pairs to map multiple authentication domains to
+  username regexes.
+* The authentication system matches the login username with the username regex in
+  the mapping to determine which authentication domain to use.
+* The domain in this mapping must be present in the list of 'authDomains'.
+* If you configure 'authType' to "proxySSO" for a domain, then one of the following
+  must apply:
+  * The username regex must match to a domain that has been configured as Proxy SSO or LDAP.
+  * The 'authType' for the 'defaultDomain' that you specify must be either "proxySSO" or "LDAP".
+* Example: splunk_saml_domain = .*@splunk.com
+* This setting is optional.
+* No default.
+
 
 #####################
 # LDAP settings
@@ -112,6 +186,45 @@ scimSupportedDomains = <comma-separated list>
 * The <authSettings-key> must be one of the values listed in the
   authSettings setting, which must be specified in the previous [authentication]
   stanza.
+* When 'authVersion' is set to "v2", '<authSettings-key>' is a domain name
+  from the list of 'authDomains' that you specified.
+* The strategy stanza name is '<authSettings-key>_<strategy-name>'.
+* All strategy stanza names starting with '<authSettings-key>' are part of
+  the same domain.
+* This setting is required to enable LDAP authentication scheme when
+  'authVersion' is set to "v2".
+* No default.
+
+authType = LDAP
+* Specifies that the settings for this stanza pertain to the LDAP authentication
+  scheme.
+* Valid only when 'authVersion' is set to "v2"
+* Required.
+* No default.
+
+strategies = <comma-separated list>
+* A list of LDAP strategies that the auth system is to query for authentication.
+* Valid only when 'authVersion' is set to "v2"
+* Required.
+* No default.
+
+disabledStrategies = <comma-separated list>
+* A list of disabled LDAP strategies.
+* The authentication system skips these strategies.
+* To enable authentication using a strategy, remove it from this list and add
+  to the 'strategies' setting.
+* Valid only when 'authVersion' is set to "v2"
+* This setting is optional.
+* No default.
+
+defaultRoleIfMissing = <string>
+* If the LDAP server does not return any groups, or if the authentication
+  system cannot map LDAP groups to Splunk roles, then the system uses this
+  value, if you provide it.
+* Valid only when 'authVersion' is set to "v2"
+* This setting is optional.
+* Default: empty string
+
 
 host = <string>
 * The hostname of the LDAP server.
@@ -372,6 +485,16 @@ ldap_negative_cache_timeout = <nonnegative decimal>
 
 [<authSettings-key>]
 * Follow this stanza name with the following setting/value pairs:
+* When 'authVersion' is set to "v2", '<authSettings-key>' is a domain name
+  from the list of 'authDomains'.
+* This setting is required to enable Scripted authentication scheme when
+  'authVersion' is set to "v2".
+
+authType = Scripted
+* Specifies that the settings pertain to the Scripted authentication scheme.
+* Valid only when 'authVersion' is set to "v2"
+* Required.
+* No default.
 
 python.version = {default|python|python2|python3|python3.7|python3.9|latest}
 * DEPRECATED. Use 'python.required' instead to specify which Python versions the
@@ -458,6 +581,20 @@ getUsersTTL = <time range string>
 [splunk_auth]
 * Settings for Splunk's internal authentication system.
 
+authType = Splunk
+* Specifies that these settings pertain to the native Splunk platform authentication scheme.
+* Valid only when 'authVersion' is set to "v2"
+* This setting is optional.
+* Default: Splunk
+
+passwordHashAlgorithm = [SHA512-crypt|SHA256-crypt|SHA512-crypt-<num_rounds>|SHA256-crypt-<num_rounds>|MD5-crypt]
+* This controls how the Splunk platform stores hashed passwords in the password file for
+  the "Splunk" 'authType'.
+* Valid only when 'authVersion' is set to "v2"
+* See the 'passwordHashAlgorithm' setting in the [authentication] stanza for
+  additional information.
+* This setting is optional.
+* Default: SHA512-crypt
 
 minPasswordLength = <positive integer>
 * Specifies the minimum permitted password length in characters when
@@ -641,6 +778,17 @@ scsSyncUserDeletes = <boolean>
 * Follow this stanza name with the following setting/value pairs.
 * The <authSettings-key> must be one of the values listed in the
 * authSettings setting, specified above in the [authentication] stanza.
+* When 'authVersion' is set to "v2", '<saml-authSettings-key>' is a domain name
+  from the list of 'authDomains'.
+* This setting is required to enable SAML authentication scheme when
+  'authVersion' is set to "v2".
+* No default.
+
+authType = SAML
+* Specifies that the settings pertain to the SAML authentication scheme.
+* Valid only when 'authVersion' is set to "v2"
+* Required.
+* No default.
 
 fqdn = <string>
 * The fully qualified domain name where this splunk instance is running.
@@ -650,7 +798,7 @@ fqdn = <string>
   present, the Splunk platform uses the SSL setting for Splunk Web.
 * This setting is optional.
 * the Splunk platform uses this information to populate the 'assertionConsumerServiceUrl'.
-* Default: $HOSTNAME
+* Default: https://<stack_name>.splunkcloud.com
 
 redirectPort = <port number>
 * The port where SAML responses are sent.
@@ -660,7 +808,7 @@ redirectPort = <port number>
   instead of the Splunk Web port.
 * To prevent any port information to be appended in the
   'assertionConsumerServiceUrl' setting, set this to 0.
-* Default: The value of 'httpport' in the web.conf file
+* Default: 443
 
 idpSSOUrl = <url>
 * The protocol endpoint on the IDP (Identity Provider) where the
@@ -997,6 +1145,52 @@ useAuthExtForTokenAuthOnly = <boolean>
   is defined in the [userToRoleMap_<saml-authSettings-key>] stanza.
 * This setting is optional.
 * Default: true
+
+getUserInfoCacheRefresh = <boolean>
+* Whether or not the Splunk platform refreshes cached SAML user information
+  before the cached entry expires.
+* A value of "true" means the Splunk platform refreshes eligible cached SAML
+  user information with the 'getUserInfo' script function in background
+  workers.
+* A value of "false" means the Splunk platform does not refresh cached SAML
+  user information before the cached entry expires.
+* The Splunk platform ignores this setting when the 'getUserInfo' script
+  function is unavailable.
+* Changes to this setting require an authentication reload to take effect.
+* This setting is optional.
+* Default: false
+
+getUserInfoCacheRefreshWorkerCount = <positive integer>
+* The number of background workers that the Splunk platform uses for SAML user
+  information cache refresh requests that call the 'getUserInfo' script
+  function.
+* The Splunk platform ignores this setting when 'getUserInfoCacheRefresh' has
+  a value of "false".
+* Minimum value: 1
+* Maximum value: 10
+* Changes to this setting require an authentication reload to take effect.
+* This setting is optional.
+* Default: 3
+
+getUserInfoCacheRefreshDrainInterval = <timespan>
+* How often the Splunk platform submits queued SAML user information cache
+  refresh requests to background workers.
+* The Splunk platform ignores this setting when 'getUserInfoCacheRefresh' has
+  a value of "false".
+* Minimum value: 5s
+* Changes to this setting require an authentication reload to take effect.
+* This setting is optional.
+* Default: 5s
+
+getUserInfoCacheRefreshLeadTime = <timespan>
+* How long before the cached SAML user information expires the Splunk platform
+  considers the entry eligible for background refresh.
+* The Splunk platform ignores this setting when 'getUserInfoCacheRefresh' has
+  a value of "false".
+* Must be greater than 0s (0 seconds).
+* Changes to this setting require an authentication reload to take effect.
+* This setting is optional.
+* Default: 300s
 
 cacheSAMLUserInfotoDisk = <boolean>
 * Whether the Splunk auth system only keeps SAML user mapping
@@ -1419,7 +1613,7 @@ allowEntities = <boolean>
 # Authentication Response Attribute Map
 #####################
 
-[authenticationResponseAttrMap_SAML]
+[authenticationResponseAttrMap_<string>]
 * The Splunk platform expects emails, real names, and roles to be returned as SAML
   attributes in SAML assertion. This stanza can be used to map attribute names
   to what is expected. These are optional settings, and are only needed for
@@ -1473,6 +1667,12 @@ mail = <string>
 
 [proxysso-authsettings-key]
 * Follow this stanza name with the setting/value pairs listed below.
+
+authType = ProxySSO
+* Specifies that the settings pertain to ProxySSO authentication.
+* Valid only when 'authVersion' is set to "v2"
+* Required.
+* No default.
 
 defaultRoleIfMissing = <splunk role>
 * If Splunk roles cannot be determined based on role mapping, the Splunk platform
@@ -1848,6 +2048,79 @@ enableMfaAuthRest = <boolean>
 
 
 
+#####################
+# SAML Identity Provider
+#####################
+
+[samlIdp]
+* The settings for the Splunk SAML identity provider (IDP).
+* The identity provider lets service providers use the Splunk platform to authenticate users.
+* The settings in this stanza are used in the SAML protocol.
+
+idpId = <string>
+* The unique identifier of the SAML identity provider.
+* The Splunk platform instance provides REST endpoints for the SAML IdPs at `/samlp/<idpId>`.
+* If you do not give this setting a value, the SAML identity provider does not start.
+* Optional.
+* No default.
+
+entityId = <string>
+* The SAML entity identifier (the "issuer") as configured on the SAML clients.
+* Required.
+* No default.
+
+acs = <string>
+* The URL at a service provider that accepts SAML response messages from
+  the identity provider.
+* Required.
+* No default.
+
+audience = <string>
+* The issuer attribute required for the SAML assertion as it is configured at
+  the service provider.
+* Required.
+* No default.
+
+certFile = <string>
+* The full path to the SSL certificate used to sign SAML assertions.
+* The certificate is in privacy-enhanced mail (PEM) format.
+* Optional.
+* Default: The value of 'server.conf:[sslConfig]/serverCert'.
+
+sslPassword = <password>
+* The certificate password.
+* Optional.
+* Default: The value of 'server.conf:[sslConfig]/sslPassword'.
+
+signatureAlgorithm = [RSA-SHA256|RSA-SHA384|RSA-SHA512]
+* The signature algorithm that is used for signing SAML messages produced by the
+  identity provider.
+* RSA-SHA256 corresponds to 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'.
+* RSA-SHA384 corresponds to 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384'.
+* RSA-SHA512 corresponds to 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'.
+* The "RSA-SHA1" algorithm has been removed. Setting this as a value no longer
+  has an effect.
+* Optional.
+* Default: RSA-SHA256
+
+signatureRawPubKey = <boolean>
+* Whether or not the signatures in the SAML response that the Splunk platform
+  sends to a SAML service provider (SP) contain a KeyValue element that
+  contains the raw public key.
+* The Splunk platform populates this field during SAML IdP configuration,
+  and can send it as part of any assertion to the SAML SP.
+* For security reasons, if the SP supports it, the Splunk platform should not
+  supply this element. However, if the SP does require the element to complete the
+  authentication process, give this setting a value of "true".
+* This setting is optional.
+* Default: false
+
+enableIdentityConvergence = <boolean>
+* Whether or not Splunk Cloud Services uses this instance as an identity provider.
+* Optional.
+* Default: false.
+
+
 ############################################################################
 # Open Authorization version 2.0 (OAuth2) Token Validation Configuration
 ############################################################################
@@ -1862,7 +2135,7 @@ certFile = <string>
   uses to sign OAuth2 tokens.
 * The certificate you specify must be in privacy-enhanced mail
   (PEM) format.
-* Default: Not set
+* Default: The value of 'authentication.conf:[samlIdp]/certFile'
 
 sslPassword = <string>
 * The password for the certificate that the authentication system

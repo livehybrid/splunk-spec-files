@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 ############################################################################
 # OVERVIEW
@@ -192,9 +192,27 @@ activate_scheduled_export_upscaling = <boolean>
   large dashboards.
 * Default: true
 
+[feature:new_search_experience]
+
+enable_new_search_admin = <boolean>
+* Allows admins to enable the new Search and Dashboard Experience preview for users on Splunk Cloud Platform.
+* A value of "true" means that admins will see a new setting to enable the new Search and Dashboard Experience preview for all users.
+* A value of "false" means that admins will not see a new setting to enable the new Search and Dashboard Experience preview for all users.
+* Default: true
+
+enable_new_search_user = <boolean>
+* Determines whether or not users see the new Search and Dashboard Experience preview on Splunk Cloud Platform.
+* A value of "true" means that users will see the new Search and Dashboard Experience preview.
+* A value of "false" means that users will not see the new Search and Dashboard Experience preview.
+* Default: false
 
 [feature:new_data_management_experience]
 
+enable_new_data_management_link = <boolean>
+* Determines whether or not users see the link to the new Data Management Experience on Splunk Cloud Platform.
+* A value of "true" means that users will see the link to the new Data Management Experience.
+* A value of "false" means that users will not see the link to the new Data Management Experience.
+* Default: true
 
 enable_new_data_management_home = <boolean>
 * Whether or not the Data Management link navigates to the Data Management
@@ -205,6 +223,17 @@ enable_new_data_management_home = <boolean>
   and navigates to the landing page on the Splunk Cloud Services (SCS) tenant
   for Splunk Cloud Platform.
 * Default: true
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+[feature:manager_xml_pages]
+
+enable_element_overlay_usage = <boolean>
+* Determines whether the 'element_overlay' query parameter in Splunk Web is
+  enabled or disabled.
+* A value of "false" means 'element_overlay' is disabled.
+* CAUTION: Do not change this setting unless instructed to do so by Splunk
+  Support.
+* Default: false
 
 
 [feature::windows_rce]
@@ -552,7 +581,38 @@ enable_system_namespace_redirection = <boolean>
 * CAUTION: Do not change this setting.
 * Default: true
 
+[feature:ip_allowlist]
+enable_ipv6_validations = <boolean>
+* Determines whether or not Splunk Web allows IPv6 addresses in address
+  input forms for IP allow lists.
+* A value of "true" means that Splunk Web allows IPv6 addresses in
+  address input forms and both IPv4 and IPv6 addresses will pass frontend
+  validation.
+* A value of "false" means that Splunk Web allows only IPv4 addresses in
+  address input forms and IPv6 addresses will fail frontend validation.
+* Default: true
 
+[feature:dynamic_feature_flagging]
+
+enable_dynamic_ui_updates = <boolean>
+* Determines whether or not a Splunk Cloud Platform deployment receives dynamic
+  user interface updates.
+* A value of "true" means the deployment receives the latest user interface
+  updates.
+* Splunk Cloud Platform deployments pull user interface updates from the
+  content delivery network (CDN). Splunk Enterprise deployments pull user
+  interface updates from the search head.
+* A value of "false" means the deployment does not receive dynamic user
+  interface updates.
+* Default: true
+
+feature_flag_service_url = <string>
+* Specifies the URL from which newly released user interface updates are
+  downloaded.
+* CAUTION: Do not modify this value without guidance from Splunk personnel.
+  Specifying an incorrect URL value can make content updates inaccessible to your
+  deployment.
+* Default: dff.splunk.com
 
 [feature:appserver]
 
@@ -585,7 +645,23 @@ enable_ipv6_validations = <boolean>
   and CIDR ranges.
 * Default: true
 
+enable_s3_modernization = <boolean>
+* Whether or not Splunk Web displays the modernized Federated Search for Amazon
+  S3 workflow.
+* A value of "false" means Splunk Web displays the old workflow.
+* A value of "true" means Splunk Web displays the modernized workflow.
+* Default: true
 
+[feature:federated_analytics]
+enable_fa_asl = <boolean>
+* Whether or not Splunk Web displays workflows associated with setting up
+  Federated Analytics.
+* A value of "false" means the workflows are not visible in Splunk Web and
+  associated configurations, such as federated providers and federated indexes,
+  can be viewed but not changed.
+* A value of "true" means the workflows are visible in Splunk Web and
+  configurations associated with Federated Analytics can be updated.
+* Default: false
 
 [feature:knowledge_object_favorites]
 enable_dashboards_favorites = <boolean>
@@ -600,6 +676,14 @@ enable_reports_favorites = <boolean>
 * A value of "false" means users cannot favorite or unfavorite reports.
 * Default: true
 
+[feature:cmc_link_in_settings]
+enable_show_cmc_link = <boolean>
+* Determines whether a link to Cloud Monitoring Console appears in the settings
+  menu in Splunk Web.
+* A value of "true" means link is present.
+* A value of "false" means link is absent.
+* CAUTION: Do not change this setting.
+* Default: true
 
 [feature:search_ai_assistant]
 * Determines whether Splunk Web displays the Splunk AI Assistant for SPL
@@ -608,7 +692,7 @@ enable_reports_favorites = <boolean>
   in the Search app.
 * A value of "false" means that users can't see the Splunk AI Assistant for SPL
   in the Search app.
-enable_search_ai_assistant = true
+enable_search_ai_assistant = false
 
 [feature:splunk_ai_canvas]
 check_ai_canvas_eligible = false
@@ -619,7 +703,22 @@ check_ai_canvas_eligible = false
 * CAUTION: Do not change this setting.
 * Default: false
 
+[feature:pendo]
+enable_pendo = <boolean>
+* This setting turns on or off Pendo telemetry integration in Splunk Web.
+* A value of "true" means Pendo telemetry is on.
+* A value of "false" means Pendo telemetry is off.
+* Default: true
 
+[feature:scoped_capabilities]
+enable_scoped_capabilities_ui = <boolean>
+* Determines whether Splunk Web displays UI related to scoped capabilities,
+  which are authorization policies that add fine-grained scopes to capabilities
+  and are necessary for implementing complex access policies.
+* A value of "true" means that policies management pages accessed through
+  Settings and on the roles page are visible in Splunk Web.
+* A value of "false" means that policies management pages accessed through
+  Settings and on the roles page are not visible in Splunk Web.
 
 [feature:spl2]
 enable_spl2 = <boolean>
@@ -643,7 +742,9 @@ deactivate_custom_mako_templates = <boolean>
   $SPLUNK_HOME/etc/apps/<app>/appserver/templates and $SPLUNK_HOME/etc/apps/
   <app>/appserver/modules directories.
 * A value of "false" means Splunk Web allows custom app Mako templates in those
-  directories.
+  directories, with a WARN message on each custom app Mako template load
+  indicating that the template is deprecated and is scheduled for removal in an
+  upcoming release.
 * Regardless of this setting, Splunk Web always allows first-party templates in
   the $SPLUNK_HOME/share/splunk/search_mrsparkle directory.
 * Default: false
@@ -655,7 +756,9 @@ deactivate_custom_cherrypy_controllers = <boolean>
   directory are not registered, causing all /custom/<app>/* routes to return
   a 404 error.
 * A value of "false" means Splunk Web allows custom app CherryPy controllers in
-  those directories.
+  those directories, with a WARN message at controller registration and on each
+  request indicating that the controller is deprecated and is scheduled for
+  removal in an upcoming release.
 * This setting only affects the /custom/<app>/* directory. It does not affect
   REST endpoints, views, dashboards, and static assets.
 * Default: false

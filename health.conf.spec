@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 # This file sets the default thresholds for Splunk Enterprise's built
 # in Health Report.
@@ -120,16 +120,20 @@ disabled = <boolean>
 * A value of 1 disables the clustering feature health check.
 * Default: 0 (enabled)
 
-[data_management_health_reporter]
-disabled = <boolean>
-* Whether or not the health check for data management is disabled.
-* A value of 1 disables the health check for data management.
-* Default: 0 (enabled)
 
-health_report_period = <number>
-* The time interval, in seconds, between each execution
-  of the data management health report.
-* Default: 30
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+[noah]
+disabled = <boolean>
+* Whether or not this Splunk platform instance calls Noah Server to retrieve
+  health report information.
+* A value of 1 disables the calling into Noah Server for health report
+  information.
+* Default: 1 (disabled)
+
+noah_server_request_interval = <number>
+* The amount of time, in seconds, that elapses between each request into the
+  Noah Server.
+* Default: 60.
 
 [tree_view:health_subset]
 * Defines a tree view for health features.

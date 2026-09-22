@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.2604.12
 #
 # This file contains possible attributes and values you can use to configure
 # the Splunk Web interface.
@@ -275,9 +275,12 @@ enable_secure_entity_move = <boolean>
 * Default: true
 
 enable_insecure_pdfgen = <boolean>
-* Whether or not the "/services/pdfgen/render" REST endpoint allows GET requests.
+* Whether or not the "/services/pdfgen/render" splunkd REST endpoint allows GET
+  requests.
 * If "true", allows PDFs to be generated using GET or POST requests.
 * If "false", only allows PDFs to be generated using POST requests.
+* This setting does not enable GET through Splunk Web. Splunk Web exposes this
+  endpoint through POST only.
 * Default: false
 
 simple_error_page = <boolean>
@@ -1536,6 +1539,14 @@ allowExternalRemote = <boolean>
 * Determines whether or not Splunk Web displays the "Automatic UI updates" menu item.
 * Default: false
 
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+remoteRoot = <string>
+* The URL of the content delivery network that hosts remote Splunk Pages.
+* Default: https://core-ae.scp.splunk.com
+
+stack_id = <string>
+* The stack ID for a Splunk Cloud Platform instance.
+* Default: emptry string
 
 [admin_config_ui]
 * Set the options to control the display of additional dashboard 
@@ -1550,6 +1561,19 @@ dashboards_trusted_domains_list = <boolean>
   Domains List page.
 * A value of "false" means that Splunk Web doesn't display the Dashboards 
   Trusted Domains List page.
+* Default: true
+
+# @@INCLUDED AS WITH_CLOUD ## Do not remove
+ip_allow_list = <boolean>
+* Feature flag for the IP Allow List page in the Admin Config UI Framework.
+* Default: true
+
+webhook_allow_list = <boolean>
+* Feature flag for the webhook allow list page in the Admin Config UI Framework.
+* Default: true
+
+limits_conf = <boolean>
+* Feature flag for the limits.conf page in the Admin Config UI Framework.
 * Default: true
 
 
