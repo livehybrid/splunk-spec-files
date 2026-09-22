@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.3
 #
 ############################################################################
 # OVERVIEW
@@ -6224,6 +6224,12 @@ replicate_search_peers = <boolean>
 * Add/remove search-server request is applied on all members
   of a search head cluster, when this value to set to true.
 * Requires a healthy search head cluster with a captain.
+
+[prometheus]
+
+disabled = <boolean>
+* Set to true to disable the /services/metrics REST endpoint.
+* Default: true
 
 
 [watchdog]

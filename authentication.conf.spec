@@ -1,4 +1,4 @@
-#   Version 10.4.2
+#   Version 10.4.3
 #
 # This file contains possible settings and values for configuring
 # authentication via authentication.conf.
@@ -997,6 +997,52 @@ useAuthExtForTokenAuthOnly = <boolean>
   is defined in the [userToRoleMap_<saml-authSettings-key>] stanza.
 * This setting is optional.
 * Default: true
+
+getUserInfoCacheRefresh = <boolean>
+* Whether or not the Splunk platform refreshes cached SAML user information
+  before the cached entry expires.
+* A value of "true" means the Splunk platform refreshes eligible cached SAML
+  user information with the 'getUserInfo' script function in background
+  workers.
+* A value of "false" means the Splunk platform does not refresh cached SAML
+  user information before the cached entry expires.
+* The Splunk platform ignores this setting when the 'getUserInfo' script
+  function is unavailable.
+* Changes to this setting require an authentication reload to take effect.
+* This setting is optional.
+* Default: false
+
+getUserInfoCacheRefreshWorkerCount = <positive integer>
+* The number of background workers that the Splunk platform uses for SAML user
+  information cache refresh requests that call the 'getUserInfo' script
+  function.
+* The Splunk platform ignores this setting when 'getUserInfoCacheRefresh' has
+  a value of "false".
+* Minimum value: 1
+* Maximum value: 10
+* Changes to this setting require an authentication reload to take effect.
+* This setting is optional.
+* Default: 3
+
+getUserInfoCacheRefreshDrainInterval = <timespan>
+* How often the Splunk platform submits queued SAML user information cache
+  refresh requests to background workers.
+* The Splunk platform ignores this setting when 'getUserInfoCacheRefresh' has
+  a value of "false".
+* Minimum value: 5s
+* Changes to this setting require an authentication reload to take effect.
+* This setting is optional.
+* Default: 5s
+
+getUserInfoCacheRefreshLeadTime = <timespan>
+* How long before the cached SAML user information expires the Splunk platform
+  considers the entry eligible for background refresh.
+* The Splunk platform ignores this setting when 'getUserInfoCacheRefresh' has
+  a value of "false".
+* Must be greater than 0s (0 seconds).
+* Changes to this setting require an authentication reload to take effect.
+* This setting is optional.
+* Default: 300s
 
 cacheSAMLUserInfotoDisk = <boolean>
 * Whether the Splunk auth system only keeps SAML user mapping
