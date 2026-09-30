@@ -1,0 +1,77 @@
+name: Tag Splunk Version
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'server.conf.spec'
+  workflow_dispatch: # Allow manual triggering
+
+concurrency:
+  group: tag-splunk-version
+  cancel-in-progress: false
+
+jobs:
+  tag-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: master
+          fetch-depth: 0
+
+      - name: Get Splunk version
+        id: get_version
+        run: |
+          version=$(grep -m1 -oP '^#\s+Version\s+\K\S+' server.conf.spec || true)
+          if [ -z "$version" ]; then
+            echo "ERROR: could not read version from server.conf.spec"
+            exit 1
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Splunk version: $version"
+
+      - name: Find commit that introduced this version
+        id: find_commit
+        run: |
+          version="${{ steps.get_version.outputs.version }}"
+
+          if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
+            echo "Tag $version already exists at $(git rev-parse --short "$version^{commit}")"
+            echo "exists=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Walk master's first-parent history back to the first commit carrying this version
+          target=""
+          for commit in $(git rev-list --first-parent HEAD); do
+            commit_version=$(git show "$commit:server.conf.spec" 2>/dev/null | grep -m1 -oP '^#\s+Version\s+\K\S+' || true)
+            [ "$commit_version" = "$version" ] || break
+            target="$commit"
+          done
+
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "commit=$target" >> $GITHUB_OUTPUT
+          echo "Version $version introduced in $(git log -1 --format='%h %s' "$target")"
+
+      - name: Configure Git
+        if: steps.find_commit.outputs.exists == 'false'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Create and push tag
+        if: steps.find_commit.outputs.exists == 'false'
+        run: |
+          version="${{ steps.get_version.outputs.version }}"
+          commit="${{ steps.find_commit.outputs.commit }}"
+
+          git tag -a "$version" "$commit" -m "Splunk $version spec and default conf files"
+          git push origin "refs/tags/$version"
+          echo "Tagged $commit as $version"
