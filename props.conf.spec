@@ -1,4 +1,4 @@
-#   Version 10.4.4
+#   Version 10.6.0.5
 #
 # This file contains possible setting/value pairs for configuring Splunk
 # software's processing properties through props.conf.
@@ -1713,7 +1713,8 @@ unarchive_cmd_start_mode = [direct|shell]
     "shell" instead.
 * A value of "shell" means that a shell process runs the "unarchive_cmd" commands.
   This allows for execution of a command pipeline that consists of multiple commands.
-* Default: shell
+* Default (on Splunk Cloud Platform): direct
+* Default (on Splunk Enterprise): shell
 
 unarchive_sourcetype = <string>
 * Sets the source type of the contents of the matching archive file. Use
