@@ -1,4 +1,4 @@
-#   Version 10.4.3
+#   Version 10.4.4
 #
 # This file contains possible attributes and values you can use to configure
 # the Splunk Web interface.
@@ -275,9 +275,12 @@ enable_secure_entity_move = <boolean>
 * Default: true
 
 enable_insecure_pdfgen = <boolean>
-* Whether or not the "/services/pdfgen/render" REST endpoint allows GET requests.
+* Whether or not the "/services/pdfgen/render" splunkd REST endpoint allows GET
+  requests.
 * If "true", allows PDFs to be generated using GET or POST requests.
 * If "false", only allows PDFs to be generated using POST requests.
+* This setting does not enable GET through Splunk Web. Splunk Web exposes this
+  endpoint through POST only.
 * Default: false
 
 simple_error_page = <boolean>

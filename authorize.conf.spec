@@ -1,4 +1,4 @@
-#   Version 10.4.3
+#   Version 10.4.4
 #
 ############################################################################
 # OVERVIEW
@@ -1270,7 +1270,9 @@ ephemeralExpiration = <relative-time-modifier>
 * Lets a user edit and delete the role mappings for an OAuth configuration.
 
 [capability::edit_internal_oauth_clients]
-* Lets a user edit OAuth internal clients.
+* Lets a user create, edit, and remove internal OAuth clients, and assign roles
+  to those clients. Role assignments follow the same authorization rules as
+  assigning roles to users with the 'edit_user' capability.
 
 [capability::list_internal_oauth_clients]
 * Lets a user list existing OAuth internal clients.
@@ -1329,6 +1331,10 @@ ephemeralExpiration = <relative-time-modifier>
 [capability::edit_conf_objects]
 * Lets a user create, update, and delete configuration objects using the 
  /services/configs/v1 REST API Endpoint.
+
+[capability::edit_transforms]
+* Lets a user edit transforms through the services/properties/transforms
+  endpoint.
 
 [capability::list_conf_objects]
 * Lets a user list and read configuration objects using the 
