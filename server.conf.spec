@@ -1,4 +1,4 @@
-#   Version 10.4.3
+#   Version 10.4.4
 #
 ############################################################################
 # OVERVIEW
@@ -69,6 +69,17 @@ hostnameOption = [ fullyqualifiedname | clustername | shortname ]
   * 'shortname' returns the NETBIOS name of the machine.
 * Cannot be an empty string.
 * Default: shortname
+
+max_crashlog_files = <unsigned integer>
+* The maximum number of crash-*.log files to keep in
+  the $SPLUNK_HOME/var/log/splunk directory.
+* When the Splunk platform starts and periodically while splunkd is running,
+  it prunes the oldest crash log files when the number of crash log files
+  exceeds this setting.
+* The Splunk platform uses the default if you specify an invalid value.
+* If you configure this setting to be lower than 5, the software sets 
+  it at 5.
+* Default: 20
 
 sessionTimeout = <nonnegative integer>[s|m|h|d]
 * The amount of time before a user session times out, expressed as a
