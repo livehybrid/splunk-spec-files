@@ -60,6 +60,13 @@ jobs:
           tar -xzf splunk-$version-$build-$file_pattern.tgz -C /tmp/splunk-extract
           echo "Extracted to /tmp/splunk-extract"
 
+      - name: Remove existing Splunk files from repo root
+        run: |
+          # Clear the previous version's files first, so any file this release no longer
+          # ships is deleted rather than left behind by the copy steps below
+          rm -f ./*.conf ./*.spec ./splunkrc_cmds.xml
+          echo "Removed existing .conf, .spec and splunkrc_cmds.xml files"
+
       - name: Copy .conf files to repo root
         run: |
           if [ -d "/tmp/splunk-extract/splunk/etc/system/default" ]; then
@@ -77,6 +84,16 @@ jobs:
             echo "Copied .spec files to repo root"
           else
             echo "ERROR: README directory not found at /tmp/splunk-extract/splunk/etc/system/README"
+            exit 1
+          fi
+
+      - name: Copy splunkrc_cmds.xml to repo root
+        run: |
+          if [ -f "/tmp/splunk-extract/splunk/etc/system/static/splunkrc_cmds.xml" ]; then
+            cp /tmp/splunk-extract/splunk/etc/system/static/splunkrc_cmds.xml .
+            echo "Copied splunkrc_cmds.xml to repo root"
+          else
+            echo "ERROR: splunkrc_cmds.xml not found at /tmp/splunk-extract/splunk/etc/system/static"
             exit 1
           fi
 
@@ -99,15 +116,15 @@ jobs:
       - name: Check for changes
         id: check_changes
         run: |
-          # Only check for changes in .conf and .spec files
-          changed_files=$(git status --porcelain | grep -E '\.(conf|spec)$' || true)
+          # Only check for changes (including deletions) in .conf, .spec and splunkrc_cmds.xml
+          changed_files=$(git status --porcelain | grep -E '\.(conf|spec)$|splunkrc_cmds\.xml$' || true)
           if [ -n "$changed_files" ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Changes detected in .conf or .spec files"
+            echo "Changes detected in .conf, .spec or splunkrc_cmds.xml files"
             echo "$changed_files"
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "No changes detected in .conf or .spec files"
+            echo "No changes detected in .conf, .spec or splunkrc_cmds.xml files"
           fi
 
       - name: Create Pull Request
