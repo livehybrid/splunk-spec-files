@@ -45,15 +45,30 @@ This file is useful for tracking changes to the `splunk` CLI tool across version
 
 ---
 
-Each version of Splunk is tagged in this repository, making it easy to track changes across releases.
+Each version of Splunk is tagged in this repository, making it easy to track changes across releases. Tags use the plain Splunk version number (for example `9.4.3`, `10.6.0.5`), with no `v` prefix.
 
 ## Available Versions
 
-This repository tracks Splunk versions from **6.5.0** to **10.0.1**. You can see all available versions with:
+This repository tracks Splunk Enterprise versions from **8.1.0** onwards. You can see all available versions with:
 
 ```bash
-git tag --list
+git fetch --tags
+git tag --list | sort -V
 ```
+
+A few tags point at versions that only exist on side branches rather than `master`:
+
+| Tag | Notes |
+|-----|-------|
+| `10.4.2604.12` | Splunk Cloud build, branch `cloud-10.4.2604.12` |
+| `10.6.0.4` | Branch `splunk-10.6.0.4` |
+| `10.2.0-beta`, `10.4.0-beta` | Beta releases |
+
+Versions from 6.5.0 to 8.0.x are only available in the upstream repository, [jewnix/splunk-spec-files](https://github.com/jewnix/splunk-spec-files).
+
+### How new versions are tagged
+
+The [Update Splunk Spec Files](.github/workflows/update-splunk-specs.yml) workflow checks for a new Splunk Enterprise release daily and opens a pull request with the updated files. When that pull request is merged into `master`, the [Tag Splunk Version](.github/workflows/tag-splunk-version.yml) workflow reads the version from `server.conf.spec` and tags the commit that first introduced it.
 
 ## Comparing Configuration Changes Between Versions
 
@@ -118,12 +133,12 @@ git diff 10.0.0
 1. Navigate to the repository on GitHub
 2. Use the compare URL pattern:
    ```
-   https://github.com/jewnix/splunk-spec-files/compare/<older-version>...<newer-version>
+   https://github.com/livehybrid/splunk-spec-files/compare/<older-version>...<newer-version>
    ```
 
    For example, to compare version 9.0.0 to 10.0.0:
    ```
-   https://github.com/jewnix/splunk-spec-files/compare/9.0.0...10.0.0
+   https://github.com/livehybrid/splunk-spec-files/compare/9.0.0...10.0.0
    ```
 
 3. The page will show:
