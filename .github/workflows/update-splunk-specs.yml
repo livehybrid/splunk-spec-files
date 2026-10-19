@@ -5,13 +5,10 @@ on:
     # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
   workflow_dispatch: # Allow manual triggering
-  push:
-    branches:
-      - develop
 
 jobs:
   update-specs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       pull-requests: write
@@ -40,6 +37,17 @@ jobs:
           echo "build=$build" >> $GITHUB_OUTPUT
           echo "Splunk version: $version"
           echo "Splunk build: $build"
+
+          # Never propose a downgrade. The download page lists more than one
+          # train (on 30 Sep 2026 it offered 10.4.4 and 10.6.0.5 within hours
+          # of each other), and a PR built from a lower version rewrites every
+          # header downwards and merges without conflict.
+          current=$(grep -m1 -oP '^#\s+Version\s+\K\S+' server.conf.spec || true)
+          if [ -n "$current" ] && [ "$version" != "$current" ] && \
+             [ "$(printf '%s\n' "$version" "$current" | sort -V | tail -1)" != "$version" ]; then
+            echo "ERROR: the download page offers $version but master already carries $current; refusing to propose a downgrade"
+            exit 1
+          fi
 
       - name: Download Splunk
         run: |

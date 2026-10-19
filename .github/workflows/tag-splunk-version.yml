@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   tag-version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
 
@@ -46,6 +46,14 @@ jobs:
             echo "Tag $version already exists at $(git rev-parse --short "$version^{commit}")"
             echo "exists=true" >> $GITHUB_OUTPUT
             exit 0
+          fi
+
+          # Never tag a downgrade: if a higher release tag already exists,
+          # master has gone backwards and that wants a person, not a tag.
+          highest=$(git tag --list | grep -E '^[0-9]+(\.[0-9]+)+$' | sort -V | tail -1 || true)
+          if [ -n "$highest" ] && [ "$(printf '%s\n' "$version" "$highest" | sort -V | tail -1)" != "$version" ]; then
+            echo "ERROR: master carries $version but tag $highest already exists; not tagging a downgrade"
+            exit 1
           fi
 
           # Walk master's first-parent history back to the first commit carrying this version
