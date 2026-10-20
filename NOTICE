@@ -1,0 +1,26 @@
+Splunk Spec Files: notice
+
+The .conf, .conf.spec and splunkrc_cmds.xml files in this repository are not
+the work of this repository's maintainers. They come from Splunk Enterprise
+installation packages.
+
+Since version 10.6.1.1, each version is copied unmodified by the Update Splunk
+Spec Files workflow (.github/workflows/update-splunk-specs.yml) from the
+package for Linux (amd64) published at download.splunk.com:
+
+  etc/system/default/*.conf          -> *.conf
+  etc/system/README/*.spec           -> *.conf.spec
+  etc/system/static/splunkrc_cmds.xml -> splunkrc_cmds.xml
+
+Earlier versions were committed by hand, much of that history in the upstream
+repository jewnix/splunk-spec-files, which this repository continues. The
+README's "Known gaps" section lists the files that were not refreshed for a
+run of releases.
+
+Copyright in those files belongs to Splunk, and they remain subject to
+Splunk's terms. This repository claims no rights in them and grants no
+licence to them. It exists so that the changes between Splunk versions can be
+read with git.
+
+Splunk and Splunk Enterprise are trademarks of Splunk. This repository is not
+affiliated with or endorsed by Splunk.
