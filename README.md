@@ -70,6 +70,26 @@ Versions from 6.5.0 to 8.0.x are only available in the upstream repository, [jew
 
 The [Update Splunk Spec Files](.github/workflows/update-splunk-specs.yml) workflow checks for a new Splunk Enterprise release daily and opens a pull request with the updated files. When that pull request is merged into `master`, the [Tag Splunk Version](.github/workflows/tag-splunk-version.yml) workflow reads the version from `server.conf.spec` and tags the commit that first introduced it.
 
+### Known gaps
+
+Two sets of files were not refreshed for a run of releases, so in those tags they do not show what Splunk shipped. The update workflow only added and overwrote files, and never copied `splunkrc_cmds.xml`, until commit `85827800`; `10.6.1.1` is the first version it extracted afterwards.
+
+| Files | Tags | What they hold |
+|-------|------|----------------|
+| `ipc_broker.conf`, `ipc_broker.conf.spec` | `10.0.0` to `10.6.0.5` | The 9.4.3 copies: their own `Version` line says 9.4.3. No 10.x update touched them, and 10.6.0.5 no longer ships them. Removed at `10.6.1.1`. |
+| `splunkrc_cmds.xml` | `10.0.2` to `10.6.0.5` | The 10.0.1 copy, unchanged in most of these tags (a few side-branch tags carry their own). `10.6.1.1` refreshed it, changing 245 lines. |
+
+To check a particular tag:
+
+```bash
+git diff 10.0.1 <tag> -- splunkrc_cmds.xml
+git show <tag>:ipc_broker.conf.spec | grep -m1 Version
+```
+
+## Where the files come from
+
+The `.conf`, `.conf.spec` and `splunkrc_cmds.xml` files are Splunk's, taken from the Splunk Enterprise package for Linux. See [NOTICE](NOTICE).
+
 ## Comparing Configuration Changes Between Versions
 
 ### Method 1: Command Line (using git)
