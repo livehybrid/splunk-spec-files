@@ -1,0 +1,12 @@
+# Dependabot version updates for the two workflows' actions. Alerts and
+# security updates are repository settings (Settings > Advanced Security), not
+# this file.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/London
