@@ -22,5 +22,8 @@ Splunk's terms. This repository claims no rights in them and grants no
 licence to them. It exists so that the changes between Splunk versions can be
 read with git.
 
+This repository's own workflows and Dependabot configuration, under .github/,
+are under the MIT licence in LICENSE. That licence covers nothing else.
+
 Splunk and Splunk Enterprise are trademarks of Splunk. This repository is not
 affiliated with or endorsed by Splunk.
