@@ -90,6 +90,8 @@ git show <tag>:ipc_broker.conf.spec | grep -m1 Version
 
 The `.conf`, `.conf.spec` and `splunkrc_cmds.xml` files are Splunk's, taken from the Splunk Enterprise package for Linux. See [NOTICE](NOTICE).
 
+The workflows and Dependabot configuration under `.github/` are under the MIT licence in [LICENSE](LICENSE). Nothing else here is: not Splunk's files, and not this README, most of which comes from the upstream repository.
+
 ## Comparing Configuration Changes Between Versions
 
 ### Method 1: Command Line (using git)
