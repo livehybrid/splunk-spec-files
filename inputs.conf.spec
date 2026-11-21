@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 ############################################################################
 # OVERVIEW
@@ -4643,6 +4643,35 @@ remote_queue.gcs_smartbus.max_deadline_time_option = <number><unit>
   platform assumes that the value is in seconds.
 * Example: 1m (1 minute), 30s (30 seconds), 50ms (50 milliseconds), 10 (10 seconds)
 * Default: 600
+
+remote_queue.gcs_smartbus.min_deadline_extension_option = <string>
+* The minimum positive duration that the Pub/Sub client library uses when
+  extending the acknowledgment deadline while waiting for the subscriber to
+  acknowledge or reject a message.
+* Specify a positive duration as <number><unit>. If you do not provide a
+  <unit> for this setting value, the Splunk platform assumes that the value
+  is in seconds.
+* If this setting has an invalid value, an empty value, or a value that is
+  less than or equal to 0, the Splunk platform uses the default value.
+* Example: 5m (5 minutes), 30s (30 seconds), 10 (10 seconds)
+* Default: 5m
+
+remote_queue.gcs_smartbus.max_deadline_extension_option = <string>
+* The maximum positive duration that the Pub/Sub client library uses when
+  extending the acknowledgment deadline while waiting for the subscriber to
+  acknowledge or reject a message.
+* Specify a positive duration as <number><unit>. If you do not provide a
+  <unit> for this setting value, the Splunk platform assumes that the value
+  is in seconds.
+* This setting must be greater than or equal to
+  'remote_queue.gcs_smartbus.min_deadline_extension_option'.
+* If this setting has an invalid value, an empty value, or a value that is
+  less than or equal to 0, the Splunk platform uses the default value.
+* If this setting has a value that is less than
+  'remote_queue.gcs_smartbus.min_deadline_extension_option', the Splunk
+  platform uses the default values for both settings.
+* Example: 5m (5 minutes), 30s (30 seconds), 10 (10 seconds)
+* Default: 5m
 
 remote_queue.gcs_smartbus.max_outstanding_messages_option = <integer>
 * The maximum number of outstanding messages for the subscriber.

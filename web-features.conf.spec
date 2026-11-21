@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 ############################################################################
 # OVERVIEW
@@ -271,8 +271,8 @@ c3_integration_enabled = <boolean>
   uses the '/services/authentication/cisco_identity' opt-out API to turn
   Cisco Unified Identity circular authentication on or off.
 * The configured Cisco Unified Identity value is the local administrator
-  request stored in 'authentication.conf:[cui]/enable_circular_auth'.
-* If 'authentication.conf:[cui]/enable_circular_auth' is absent or set to an
+  request stored in 'authentication.conf:[sis:features]/circularAuth'.
+* If 'authentication.conf:[sis:features]/circularAuth' is absent or set to an
   empty or invalid Boolean value, Cisco Unified Identity circular
   authentication is not applicable on this stack and the
   '/services/authentication/cisco_identity' API reports 'enabled=null'.

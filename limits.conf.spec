@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 ############################################################################
 # OVERVIEW
@@ -747,8 +747,9 @@ max_oom_rate_before_full_throttling = <decimal>
   all searches from being dispatched.
 * Once this value is reached, searches queue for the duration specified by
   'throttle_peer_oom_wait'.
+* This value must always be greater than max_oom_rate_before_partial_throttling
 * The supported range of values for this setting is:
-  [max_oom_rate_before_partial_throttling, 1000]
+  (max_oom_rate_before_partial_throttling, 1001]
 * Default: 0.5
 
 remote_search_requests_send_capabilities_list = <boolean>
@@ -2616,6 +2617,49 @@ maxevents = <integer>
 * Default: 50000
 
 
+[search_change_flags]
+* Controls the staged rollout of individual changes to search behavior. Each
+  setting is independent and identifies the change it controls.
+* Configure each setting in this stanza separately.
+* Setting the [search_change_flags] stanza to "disabled" has no effect.
+* The splunkd process reads this stanza once, at startup. A running process
+  does not apply later changes to the settings, even after limits.conf is
+  reloaded. To apply a change, you must restart the splunkd process.
+* Do not change settings in the [search_change_flags] stanza unless instructed
+  to do so by Splunk Support.
+
+<search_change_flag_name> = noop | WARN-SAFE | WARN-FULL | ENFORCE
+* Values are not case sensitive.
+* A value of "noop" means the Splunk platform keeps the behavior in
+  effect before the change. The Splunk platform does not write messages
+  about this setting or count occurrences.
+* A value of "WARN-SAFE" means the Splunk platform keeps the behavior in
+  effect before the change and counts each occurrence. An occurrence is each
+  time the platform runs the behavior affected by the change. The splunkd
+  process counts occurrences in metrics.log. A spawned search process counts
+  occurrences in search_telemetry.json. The Splunk platform does not write
+  messages about this setting to splunkd.log or search.log.
+* A value of "WARN-FULL" means the Splunk platform keeps the behavior in
+  effect before the change and counts occurrences in the same way as for
+  "WARN-SAFE".  For each occurrence, the Splunk platform also writes a
+  detailed message identifying its cause. The splunkd process writes the
+  message to splunkd.log, and a spawned search process writes it to search.log.
+* Use a value of "WARN-FULL" to identify who or what the change affects before
+  setting a value to "ENFORCE".
+* A value of "ENFORCE" means the Splunk platform applies the behavior that
+  the change introduces. The Splunk platform does not write messages about
+  this setting or count occurrences.
+* Setting a value to "ENFORCE" before your deployment is ready for the change
+  can alter search behavior.
+* If this setting is absent, has an empty value, or has a value other than
+  "noop", "WARN-SAFE", "WARN-FULL", or "ENFORCE" (for example, if the value
+  contains a typo), the Splunk platform behaves as it does when this setting
+  has a value of "ENFORCE". To keep the behavior in effect before the change,
+  set the value of this setting to "noop".
+* Do not change this setting unless instructed to do so by Splunk Support.
+* Default: ENFORCE
+
+
 [geomfilter]
 
 enable_clipping = <boolean>
@@ -3520,6 +3564,19 @@ optimize_max_size_mb = <unsigned integer>
 * The maximum size in megabytes of files to create with optimize
 * Specify 0 for no limit (may create very large tsidx files)
 * Default: 256
+
+skip_empty_dma_metadata_terms = <boolean>
+* Whether or not the tscollect processor skips empty source, sourcetype,
+  and host terms when the corresponding internal metadata field is present.
+* A value of "true" means the tscollect processor skips empty source,
+  sourcetype, and host terms when the corresponding internal metadata field
+  is present.
+* A value of "false" means the tscollect processor does not skip empty
+  source, sourcetype, and host terms when the corresponding internal
+  metadata field is present.
+* The tscollect processor counts and logs contradictory values regardless of
+  the 'skip_empty_dma_metadata_terms' setting.
+* Default: true
 
 
 [tstats]
@@ -6469,6 +6526,18 @@ auth_payload_expiration = <string>
 * NOTE: Do not change this setting without consulting with Splunk Support.
 * Default: 1h
 
+auth_key_rotation_period = <string>
+* The interval between rotations of the key that the SPL2 orchestrator uses
+  to authorize searches that run on the Federated Analytics Service.
+* Specify a duration with "s" (seconds), "m" (minutes), "h" (hours), or
+  "d" (days).
+* A value of "0" means the SPL2 orchestrator does not rotate the key.
+* For a nonzero value, specify a duration greater than 10 minutes and at
+  least 3 minutes greater than the value of 'auth_payload_expiration'.
+  Shorter durations might cause service disruption.
+* NOTE: Change this setting only when Splunk Support instructs you to do so.
+* Default: 1d
+
 search_fed_2.0_tier = [starter|paid]
 * Specifies the tier for Federated Analytics, which determines the limits
   Splunk software applies to federated searches.
@@ -6681,7 +6750,19 @@ origin = [all|none|<comma-separated list>]
 run_as_owner_ttl = <nonnegative integer>[s|m|h|d]
 * The time-to-live (ttl), specified as a relative time, for searches that are designated to run as if the user is the owner of the search.
 * Valid time units are s (seconds), m (minutes), h (hours), and d (days).
-* Default: "1d" (1 day)
+* Default: 1h (1 hour)
+
+run_as_key_rotation_period = <nonnegative integer>[s|m|h|d]
+* The interval between rotations of the key that the SPL2 orchestrator uses
+  to authorize searches that run as if the user owns the search.
+* Specify a duration with "s" (seconds), "m" (minutes), "h" (hours), or
+  "d" (days).
+* A value of "0" means the SPL2 orchestrator does not rotate the key.
+* For a nonzero value, specify a duration greater than 10 minutes and at
+  least 3 minutes greater than the value of 'run_as_owner_ttl'.
+  Shorter durations can cause service disruption.
+* NOTE: Change this setting only when Splunk Support instructs you to do so.
+* Default: 1d (1 day)
 
 mdl_dataset_cache_soft_ttl = <nonnegative integer>[s|m|h|d]
 * The soft time-to-live (ttl), specified as a relative time, for cached MDL

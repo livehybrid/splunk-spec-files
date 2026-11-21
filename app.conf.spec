@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 ############################################################################
 # OVERVIEW
@@ -241,8 +241,10 @@ reload.<conf_file_name>.<conf_stanza_prefix> = [ simple | never | access_endpoin
   reload trigger listed under the [triggers] section of app.conf, the cluster peer
   will fallback to the "rolling restart behavior" upon detecting changes of those
   "missing" stanzas in the newly pushed cluster bundle.
-* NOTE: This setting is ONLY used by indexer-cluster peers and ONLY supported
-  by inputs.conf, server.conf, and distsearch.conf.
+* Stanza-level reload triggers support 'inputs.conf', 'outputs.conf',
+  'server.conf', and 'distsearch.conf' for indexer-cluster bundle pushes.
+* For configuration replication, these triggers support only the
+  [userToRoleMap_SAML] stanza in 'authentication.conf'.
 * NOTE: The "conf_file_name" value does not include the file extension ".conf".
 
 [shclustering]
