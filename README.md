@@ -68,7 +68,7 @@ Versions from 6.5.0 to 8.0.x are only available in the upstream repository, [jew
 
 ### How new versions are tagged
 
-The [Update Splunk Spec Files](.github/workflows/update-splunk-specs.yml) workflow checks for a new Splunk Enterprise release daily and opens a pull request with the updated files. When that pull request is merged into `master`, the [Tag Splunk Version](.github/workflows/tag-splunk-version.yml) workflow reads the version from `server.conf.spec` and tags the commit that first introduced it.
+The [Update Splunk Spec Files](.github/workflows/update-splunk-specs.yml) workflow checks for a new Splunk Enterprise release daily, opens a pull request with the updated files and merges it into `master` itself. It then starts the [Tag Splunk Version](.github/workflows/tag-splunk-version.yml) workflow, which reads the version from `server.conf.spec` and tags the commit that first introduced it. That workflow also runs when someone pushes a change to `server.conf.spec` on `master`.
 
 ### Known gaps
 

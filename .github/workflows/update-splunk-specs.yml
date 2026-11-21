@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write  # to start Tag Splunk Version after the merge
     
     steps:
       - name: Checkout repository
@@ -142,8 +143,21 @@ jobs:
             echo "No changes detected in .conf, .spec or splunkrc_cmds.xml files"
           fi
 
+      - name: Check extracted files match the release
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          # The PR merges itself, so refuse anything whose spec header disagrees with
+          # the release we downloaded rather than letting it reach master.
+          version="${{ steps.get_version.outputs.version }}"
+          spec_version=$(grep -m1 -oP '^#\s+Version\s+\K\S+' server.conf.spec || true)
+          if [ "$spec_version" != "$version" ]; then
+            echo "ERROR: server.conf.spec says '$spec_version' but the release is '$version'; not proposing this update"
+            exit 1
+          fi
+
       - name: Create Pull Request
         if: steps.check_changes.outputs.has_changes == 'true'
+        id: create_pr
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -157,6 +171,33 @@ jobs:
             **Version:** ${{ steps.get_version.outputs.version }}
             **Build:** ${{ steps.get_version.outputs.build }}
             
-            Please review the changes and merge if appropriate.
+            This PR is merged automatically by the workflow that opened it.
           delete-branch: true
+
+      - name: Merge Pull Request
+        if: steps.create_pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.create_pr.outputs.pull-request-number }}
+        run: |
+          # Merge commit, matching how these PRs have always been merged.
+          # Retry briefly in case GitHub is still computing mergeability.
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --merge --delete-branch; then
+              echo "Merged #$PR"
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "ERROR: could not merge #$PR"
+          exit 1
+
+      - name: Tag the new version
+        if: steps.create_pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # A merge made with GITHUB_TOKEN does not fire push workflows, so
+          # Tag Splunk Version would never see it; start it explicitly.
+          gh workflow run tag-splunk-version.yml --repo "$GITHUB_REPOSITORY" --ref master
 
