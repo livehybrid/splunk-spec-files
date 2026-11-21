@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 ############################################################################
 # OVERVIEW
@@ -771,6 +771,11 @@ ephemeralExpiration = <relative-time-modifier>
   to grant permission to edit alert actions. Assign only to
   high-privileged roles such as "power" or "admin".
 
+[capability::edit_email_preprocess_results]
+* Lets a user set or change the search string that processes a saved search’s
+  results before an email alert sends those results.
+* Assign this capability only to the 'admin' role.
+
 [capability::list_all_objects]
 * Lets a user list all configuration settings for the configuration endpoints.
 * This capability prevents unauthorized access to configuration endpoints.
@@ -1357,6 +1362,10 @@ ephemeralExpiration = <relative-time-modifier>
   are restricted by default: tstats, mstats, mpreview, walklex, and typeahead. 
 * These commands can return sensitive indexed data that is protected by field
   filters and should not be accessed by a role without this capability.
+
+[capability::run_search_profiler]
+* Lets a user profile searches by specifying search profiler options or
+  initiating profiles for saved searches.
 
 [capability::schedule_rtsearch]
 * Lets a user schedule real-time saved searches.

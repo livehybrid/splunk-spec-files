@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 # This file contains possible setting/value pairs for metric alert entries in the
 # metric_alerts.conf file. You can configure metric alerts by creating your own

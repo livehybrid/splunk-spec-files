@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 
 # This file contains possible settings and values you can use to configure
 # event discovery through the search command "typelearner."

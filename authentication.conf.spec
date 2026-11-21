@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 # This file contains possible settings and values for configuring
 # authentication via authentication.conf.
@@ -2261,6 +2261,10 @@ circularAuth = <boolean>
   becomes active.
 * A value of "false" means the Splunk platform does not authenticate with
   CUI using Splunk identity credentials. CUI integration is inactive.
+* The '/services/authentication/cisco_identity' endpoint uses this same
+  setting as its tenant opt-out value. If this setting is absent, empty, or
+  invalid, the endpoint reports 'enabled=null' and rejects updates. An
+  explicit "true" or "false" value makes the endpoint available for updates.
 * Default: false
 
 [sis:settings]
@@ -2645,36 +2649,6 @@ cloudconnect_tenant = <string>
 * For this setting to work, the 'cloudconnect' setting must have
   a value of "true".
 * This setting is optional.
-* No default.
-
-[cui]
-* Settings for Cisco Unified Identity, the Cisco identity service integration
-  that works with Splunk Identity Service (SIS).
-* Settings in this stanza affect runtime behavior only when authentication.conf
-  also turns on the SIS circular authentication feature and its required SIS
-  capabilities.
-
-enable_circular_auth = <boolean>
-* Whether or not the Splunk platform uses Cisco Unified Identity circular
-  authentication for the SIS OAuth client.
-* Circular authentication lets the Splunk platform issue authorization-code and
-  token responses for the SIS client, so SIS and Cisco Unified Identity can map
-  eligible Splunk platform users into Cisco identity privileges.
-* This setting requires '[sis:features]/circularAuth' to have a value of
-  "true".
-* The '[sis:features]/circularAuth' feature also derives a default SIS IdP
-  label of "cui" unless '[sis:settings]/defaultSisIdpLabel' overrides it.
-* A value of "true" means Cisco Unified Identity circular authentication is
-  active.
-* A value of "false" means Cisco Unified Identity circular authentication is
-  inactive.
-* If this setting is absent or set to an empty value, Cisco Unified Identity
-  circular authentication is not applicable on this deployment. The
-  '/services/authentication/cisco_identity' opt-out API reports
-  'enabled=null' and rejects updates until 'enable_circular_auth' is
-  set to "true" or "false".
-* Invalid Boolean values are treated the same as absent or empty values: the
-  API reports 'enabled=null' and rejects updates.
 * No default.
 
 [crosslaunch::<target>]

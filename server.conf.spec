@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 ############################################################################
 # OVERVIEW
@@ -5903,7 +5903,13 @@ disabled = <boolean>
 * Default: false
 
 port = <integer>
-* Port to connect to the KV Store server.
+* Port to connect to the KV store server.
+* This setting is inactive when "defaultKVStoreType" is set to "cohosted".
+  The PDL sidecar discovers its service port dynamically and does not use this
+  value.
+* After upgrade to a cohosted KV store, the "splunk show kvstore-status"
+  command and the "kvstore/status" REST endpoint retain this legacy value.
+  The "warnMsg" field states that "port" and "storageEngine" are deprecated.
 * Default: 8191
 
 
@@ -5955,6 +5961,12 @@ dbPath = <string>
 
 storageEngine = wiredTiger
 * The storage engine that KV Store uses to manage its data.
+* This setting is inactive when "defaultKVStoreType" is set to "cohosted".
+  The cohosted KV store stores data in PostgreSQL and does not use a MongoDB
+  storage engine.
+* After upgrade to a cohosted KV store, the "splunk show kvstore-status"
+  command and the "kvstore/status" REST endpoint retain this legacy value.
+  The "warnMsg" field states that "port" and "storageEngine" are deprecated.
 * "mmapv1" is no longer supported for KV Store.
 * When you upgrade the Splunk platform, the KV Store storage engine will be
   migrated to "wiredTiger" automatically if "mmapv1" is still being used and

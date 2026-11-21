@@ -1,4 +1,4 @@
-#   Version 10.6.1.1
+#   Version 10.6.2.5
 #
 # This file contains possible attributes and values you can use to configure
 # the Splunk Web interface.

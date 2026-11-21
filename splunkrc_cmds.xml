@@ -3333,6 +3333,23 @@ More information in the online documentation for the corresponding REST endpoint
         </cmd>
     </item>
 
+    <!-- cleanup kvstore-postgres-migration -->
+    <item obj="kvstore-postgres-migration">
+        <cmd name="cleanup">
+            <uri><![CDATA[/kvstore/migrateToPostgres/cleanup]]></uri>
+            <help>
+                <title><![CDATA[Clean up KV Store migration state after an interrupted or failed migration, or after rollback to MongoDB.]]></title>
+                <syntax><![CDATA[cleanup kvstore-postgres-migration]]></syntax>
+                <required/>
+                <examples>
+                    <ex><![CDATA['./splunk cleanup kvstore-postgres-migration']]></ex>
+                </examples>
+            </help>
+            <type>edit</type>
+            <post_only/>
+        </cmd>
+    </item>
+
     <!-- show kvstore-postgres-migration-status -->
     <item obj="kvstore-postgres-migration-status">
         <cmd name="show">
@@ -5747,6 +5764,8 @@ Supported commands and objects:
         apply               cluster-bundle
 
         clean               [all|eventdata|globaldata|inputdata|userdata|kvstore|raft|shcluster-state-server|postgres-data]
+
+        cleanup             kvstore-postgres-migration
 
         cmd                 [btool|exporttool|importtool|locktest|locktool|parsetest|pcregextest|signtool|walklex]
 
