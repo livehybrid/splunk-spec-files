@@ -28,7 +28,9 @@ jobs:
       - name: Get Splunk version and build
         id: get_version
         run: |
-          wget -O splunkDownload.html 'https://www.splunk.com/en_us/download/splunk-enterprise.html' -q
+          # splunk.com returns 403 to wget's User-Agent (since early Nov 2026); curl's default is accepted.
+          # -f makes an HTTP error fail this step instead of yielding an empty page.
+          curl -fsSL --retry 3 --retry-delay 5 -o splunkDownload.html 'https://www.splunk.com/en_us/download/splunk-enterprise.html'
           
           version=$(cat splunkDownload.html | grep -oE "data-link=\"https://.*data-md5" | head -1 | grep -oE "splunk-.*\"" | sed "s/splunk-//g" | sed "s/-.*//g")
           build=$(cat splunkDownload.html | grep -oE "data-link=\"https://.*data-md5" | head -1 | grep -oE "splunk-.*\"" | grep -oE "[[:digit:]]-\w+-" | sed 's/^[[:digit:]]-//g' | sed 's/-//g')
@@ -37,6 +39,11 @@ jobs:
           echo "build=$build" >> $GITHUB_OUTPUT
           echo "Splunk version: $version"
           echo "Splunk build: $build"
+
+          if ! [[ "$version" =~ ^[0-9]+(\.[0-9]+)+$ && "$build" =~ ^[0-9a-f]+$ ]]; then
+            echo "ERROR: could not parse version/build from the download page (got '$version' / '$build')"
+            exit 1
+          fi
 
           # Never propose a downgrade. The download page lists more than one
           # train (on 30 Sep 2026 it offered 10.4.4 and 10.6.0.5 within hours
@@ -55,7 +62,7 @@ jobs:
           build="${{ steps.get_version.outputs.build }}"
           file_pattern="linux-amd64"
           
-          wget -O splunk-$version-$build-$file_pattern.tgz "https://download.splunk.com/products/splunk/releases/$version/linux/splunk-$version-$build-$file_pattern.tgz"
+          curl -fsSL --retry 3 --retry-delay 5 -o splunk-$version-$build-$file_pattern.tgz "https://download.splunk.com/products/splunk/releases/$version/linux/splunk-$version-$build-$file_pattern.tgz"
           echo "Downloaded: splunk-$version-$build-$file_pattern.tgz"
 
       - name: Extract Splunk
