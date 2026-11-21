@@ -174,6 +174,27 @@ jobs:
             This PR is merged automatically by the workflow that opened it.
           delete-branch: true
 
+      - name: Close superseded bot PRs
+        if: steps.create_pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT: auto-${{ steps.get_version.outputs.version }}-${{ steps.get_version.outputs.build }}
+        run: |
+          # Any open auto-* PR for an older release is superseded by this one, which
+          # carries the full file set. A PR on this run's own branch is left alone:
+          # create-pull-request updates it in place.
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --base master --limit 100 \
+              --json number,headRefName \
+              --jq '.[] | select(.headRefName | startswith("auto-")) | "\(.number) \(.headRefName)"' |
+          while read -r number branch; do
+            if [ "$branch" = "$CURRENT" ]; then
+              continue
+            fi
+            echo "Closing #$number ($branch), superseded by $CURRENT"
+            gh pr close "$number" --repo "$GITHUB_REPOSITORY" --delete-branch \
+              --comment "Superseded by \`$CURRENT\`; closed by the update workflow."
+          done
+
       - name: Merge Pull Request
         if: steps.create_pr.outputs.pull-request-number != ''
         env:
